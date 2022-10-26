@@ -1,0 +1,6 @@
+uint8 battery_level
+float32 vel_linear
+float32 vel_angular
+float32 delta_pos_x
+float32 delta_pos_y
+float32 delta_orientation_z
