@@ -1,0 +1,53 @@
+.fixed_area_control {
+    background-color: rgb(200, 200, 200);
+    background-image: none;
+}
+
+.section_title {
+    color: black;
+    font-size: 15px;
+}
+
+.input_box {
+    border-radius: 5px;
+    border: 1px solid black;
+    background-color: white;
+}
+
+.button_green {
+    background-color: rgb(0, 210, 0);
+    background-image: none;
+    color: white;
+}
+
+.button_green:active {
+    background-color: rgb(0, 230, 0);
+}
+
+.button_green_active {
+    background-color: rgb(0, 255, 0);
+    background-image: none;
+    color: white;
+}
+
+.button_red {
+    background-color: rgb(210, 0, 0);
+    background-image: none;
+    color: white;
+}
+
+.button_red:active {
+    background-color: rgb(250, 0, 0);
+}
+
+.button_red_active {
+    background-color: rgb(255, 0, 0);
+    background-image: none;
+    color: white;
+}
+
+.log_messages
+{
+    font-family: Monospaced;
+    font-size: 14px;
+}
