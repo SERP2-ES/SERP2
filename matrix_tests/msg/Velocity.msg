@@ -1,2 +1,2 @@
-uint8 vel_motor_left
-uint8 vel_motor_right
+int8 vel_motor_left
+int8 vel_motor_right

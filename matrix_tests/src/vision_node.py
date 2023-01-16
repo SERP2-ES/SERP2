@@ -436,7 +436,7 @@ def interpretImageCaptured(image, fisheye):
     img = undistort(image)
 
   # Convert to RGB
-  img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+  img = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
   # ArUco Parameters for Detection
   ARUCO_PARAMETERS = cv.aruco.DetectorParameters_create()

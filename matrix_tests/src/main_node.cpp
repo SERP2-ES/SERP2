@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   }
 
   image_transport::ImageTransport it(node);
-  image_transport::Publisher img_pub = it.advertise("/image", 1);
+  image_transport::Publisher img_pub = it.advertise("/image", 3);
 
   sensor_msgs::ImagePtr msg;
   msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();

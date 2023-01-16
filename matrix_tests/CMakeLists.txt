@@ -22,6 +22,7 @@ include_directories(
 add_message_files(DIRECTORY msg 
   FILES
   Matrix.msg
+  Velocity.msg
 )
 
 generate_messages(DEPENDENCIES 
