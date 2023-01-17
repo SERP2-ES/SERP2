@@ -5,11 +5,12 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <vector>
+#include <string>
 #include <ctime>
 
 ///ROS MSGs includes
 #include <serp/Matrix.h> 
-#include <serp/velocity.h>
+#include <serp/Velocity.h>
 
 #define SUM 0
 #define PRODUCT 1
@@ -48,11 +49,11 @@
 struct blocks {
     int id;
     int class_id;
-    string type;
-    string name;
+    std::string type;
+    std::string name;
     float out_f;
     bool out_b;
-    string constant;
+    std::string constant;
     clock_t timer;
     bool time_done;
 };
@@ -85,5 +86,7 @@ float real_vel[2] = { 0,0 }; // 1st - left, 2nd - right
 float sensors[4] = { 0,0,0,0 };
 
 int left, right, front, back;
+
+std::vector <graphEdge> edges;
 
 #endif

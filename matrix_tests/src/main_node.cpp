@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
+#include <serp/Matrix.h>
 
 int main(int argc, char **argv)
 { 
@@ -10,7 +11,8 @@ int main(int argc, char **argv)
 
   ros::NodeHandle node;
 
-  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/1.jpg");
+  //IMAGEM
+  /* cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/1.jpg");
 
   if (img.empty())
   {
@@ -25,7 +27,23 @@ int main(int argc, char **argv)
   msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
   ros::Duration(2).sleep();
   msg->header.stamp = ros::Time::now();
-  img_pub.publish(msg);
+  img_pub.publish(msg); */
+
+  //MATRIZ
+  serp::Matrix mat;
+
+  mat.manual_mode = true;
+  mat.vel_motor_left = 30;
+  mat.vel_motor_right = 2;
+
+  ros::Publisher mat_pub = node.advertise<serp::Matrix>("/matrix", 1);
+  ros::Duration(2).sleep();
+  mat_pub.publish(mat);
+
+  mat.vel_motor_left = 0;
+  mat.vel_motor_right = 0;
+  ros::Duration(5).sleep();
+  mat_pub.publish(mat);
 
   ros::spin();
   return 0;

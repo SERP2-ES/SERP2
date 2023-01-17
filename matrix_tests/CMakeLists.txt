@@ -57,6 +57,13 @@ add_dependencies(main_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED
 ## Specify libraries to link a library or executable target against
 target_link_libraries(main_node ${catkin_LIBRARIES})
 
+##NODE LOGIC
+add_executable(logic_node src/logica_node.cpp)
+set_target_properties(logic_node PROPERTIES OUTPUT_NAME logic_node PREFIX "")
+add_dependencies(logic_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(logic_node ${catkin_LIBRARIES})
+
+
 #############
 ## Install ##
 #############
