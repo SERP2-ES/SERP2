@@ -1,55 +1,48 @@
 #include "logica_node.h"
 
-/* class DiaGraph {
-    // insert new nodes into adjacency list from given graph
-    adjNode* getAdjListNode(int value, adjNode* head) {
-        adjNode* newNode = new adjNode;
-        newNode->val = value;
-        newNode->next = head;   // point new node to current head
-        return newNode;
+adjNode* getAdjListNode(int value, adjNode* head) {
+    adjNode* newNode = new adjNode;
+    newNode->val = value;
+    newNode->next = head;   // poinh{} new node to current head
+    return newNode;
+}
+
+void setSize(std::vector <graphEdge> edges, int n, int N){
+    graph.head = new adjNode * [N]();
+    graph.N = N;
+
+    // initialize head pointer for all vertices
+    for (int i = 0; i < N; ++i)
+        graph.head[i] = nullptr;
+
+    // construct directed graph by adding edges to it
+    for (int i = 0; i < n; i++) {
+        int start_ver = edges[i].start_ver;
+        int end_ver = edges[i].end_ver;
+
+        // insert in the beginning
+        adjNode* newNode = getAdjListNode(end_ver, graph.head[start_ver]);
+
+        // point head pointer to new node
+        graph.head[start_ver] = newNode;
     }
-    int N;  // number of nodes in the graph
-public:
-    adjNode** head; //adjacency list as array of pointers
+}
 
-    // Constructor
-    DiaGraph(std::vector <graphEdge> edges, int n, int N) {
-        // allocate new node
-        head = new adjNode * [N]();
-        this->N = N;
-        // initialize head pointer for all vertices
-        for (int i = 0; i < N; ++i)
-            head[i] = nullptr;
-        // construct directed graph by adding edges to it
-        for (int i = 0; i < n; i++) {
-            int start_ver = edges[i].start_ver;
-            int end_ver = edges[i].end_ver;
-
-            // insert in the beginning
-            adjNode* newNode = getAdjListNode(end_ver, head[start_ver]);
-
-            // point head pointer to new node
-            head[start_ver] = newNode;
-        }
-    }
-
-    // Destructor
-    ~DiaGraph() {
-        for (int i = 0; i < N; i++)
-            delete[] head[i];
-        delete[] head;
-    }
-};
+void cleanDiaGraph() {
+    for (int i = 0; i < N; i++)
+        delete[] graph.head[i];
+    delete[] graph.head;
+}
 
 // print all adjacent vertices of given vertex
 void display_AdjList(adjNode* ptr, int i)
 {
     while (ptr != nullptr) {
-        cout << "(" << i << ", " << ptr->val
+        std::cout << "(" << i << ", " << ptr->val
             << ") ";
         ptr = ptr->next;
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
 void print_Vector(std::vector< int > arr)
@@ -59,17 +52,17 @@ void print_Vector(std::vector< int > arr)
         std::cout << arr.at(i) << ' ';
     }
 
-    cout << endl;
+    std::cout << std::endl;
 }
 
-void sort_Vector(std::vector< int > &arr)
+/* void sort_Vector(std::vector< int > &arr)
 {
     for (int i = 0; i < arr.size() - 1; i++) {
         if (arr[i] >= arr[i + 1]) {
-            swap(arr[i], arr[i + 1]);
+           swap(arr[i], arr[i + 1]);
         }
     }
-}
+} */
 
 // give token to the first vertices
 void give_InitToken(adjNode** head, std::vector <blocks> blocks, int N, std::vector <int> &arr)
@@ -194,8 +187,8 @@ void construct_Blocks(std::vector <blocks> &arr, std::vector <int> id, int N) //
         blocks newBlock;
         newBlock.id = i;
         newBlock.class_id = id[i];
-        newBlock.out_f = NULL;
-        newBlock.out_b = NULL;
+        newBlock.out_f = NAN;
+        newBlock.out_b = NAN;
         newBlock.constant = "";
         newBlock.timer = NULL;
         newBlock.time_done = false;
@@ -383,12 +376,12 @@ void update_BlocksOutputs(adjNode** head, std::vector <blocks> &blocks, std::vec
             else // sequential token, need to check previous blocks outputs
             {
                 int p1, p2, pc; //var. auxiliar para guardar id's dos blocos
-                p1 = p2 = pc = NULL;
+                p1 = p2 = pc = -1;
 
                 float f1, f2; //var. auxiliar para guardar output (float)
                 bool b1, b2, bc; //var. auxiliar para guardar output (bool)
-                string ct = ""; //var. auxiliar para guardar constant (string)
-                f1 = f2 = NULL;
+                std::string ct = ""; //var. auxiliar para guardar constant (std::string)
+                f1 = f2 = -1;
                 b1 = b2 = bc = NULL;
 
                 for (int j = 0; j < inputs.size(); j++) //guarda os id's dos inputs na respetiva posicao
@@ -493,12 +486,12 @@ void update_BlocksOutputs(adjNode** head, std::vector <blocks> &blocks, std::vec
                 else if (blocks[i].name == "m_left")
                 {
                     out_vel[0] = f1;
-                    blocks[i].out_f = real_vel[0];
+                    blocks[i].out_f = f1;
                 }
                 else if (blocks[i].name == "m_right")
                 {
                     out_vel[1] = f1;
-                    blocks[i].out_f = real_vel[1];
+                    blocks[i].out_f = f1;
                 }
                 else if (blocks[i].name == "s_left")
                 {
@@ -599,14 +592,16 @@ void updateTimers(adjNode** head, std::vector <blocks>& blocks, std::vector< int
 
 bool checkIfChanged(std::vector <int> tokens_previous, std::vector <int> tokens_actual)
 {
-    sort_Vector(tokens_previous);
-    sort_Vector(tokens_actual);
+    //sort_Vector(tokens_previous);
+    std::sort(tokens_previous.begin(), tokens_previous.end());
+    //sort_Vector(tokens_actual);
+    std::sort(tokens_previous.begin(), tokens_previous.end());
     print_Vector(tokens_previous);
     print_Vector(tokens_actual);
 
     if (tokens_previous == tokens_actual)
     {
-        cout << "EQUAL" << endl;
+        std::cout << "EQUAL" << std::endl;
         return true;
     }
 
@@ -617,10 +612,10 @@ int check_EdgesLogic(std::vector <graphEdge> edges, std::vector <blocks> arr, in
 {
     for (int i = 0; i < n; i++) 
     {
-        string start_type = "";
-        string end_type = "";
-        string start_name = "";
-        string end_name = "";
+        std::string start_type = "";
+        std::string end_type = "";
+        std::string start_name = "";
+        std::string end_name = "";
 
         for (int j = 0; j < arr.size(); j++)
         {
@@ -1021,7 +1016,7 @@ void subs_Extend(std::vector <graphEdge> &edges, std::vector <blocks> &arr, int 
     }
 }
 
-std::vector< std::vector<int>> arrayToMatrix(int array [], int len)
+std::vector< std::vector<int>> arrayToMatrix(float array[], int len)
 {
     // array to matrix
     int n = 5;
@@ -1047,9 +1042,9 @@ std::vector< std::vector<int>> arrayToMatrix(int array [], int len)
     {
         for (int j = 0; j < n; j++)
         {
-            cout << matrix[i][j] << " ";
+            std::cout << matrix[i][j] << " ";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 
     return matrix;
@@ -1093,16 +1088,71 @@ void matrix_ToEdges(std::vector< std::vector<int>> matrix, std::vector <graphEdg
         graphEdge gE = { start, end, out, inp };
         edges.push_back(gE);
     }
-} */
+} 
 
 void cbMatrix(const serp::Matrix::ConstPtr &msg){
   if(msg->manual_mode){
     out_vel[0]= msg->vel_motor_left;
     out_vel[1] = msg->vel_motor_right;
+    return;
     //ROS_INFO("AQUI");
   }
   else{
+    int len = msg->matrix2.size();
+    int n = len / 5;
+    int col = 5;
 
+    std::vector< std::vector<int>> matrix;
+
+    matrix.resize(n); //Grow rows by m
+    for (int i = 0; i < col; ++i)
+    {
+        //Grow Columns by n
+        matrix[i].resize(col);
+    }
+
+    for (int i = 0; i < len; i++)
+    {
+        matrix[i / 5][i % 5] = msg->matrix2[i];
+    }
+
+    // print matrix
+    /* for (int i = 0; i < nanf32x; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            std::cout << matrix[i][j] << " ";
+        }
+        std::cout << std::endl;
+    } */
+
+    matrix_ToEdges(matrix, edges, n);
+    N = (int) msg->matrix1.size();
+    std::vector<int> mat2;
+
+    for(int i = 0; i < N; i++ ){
+        mat2.push_back(msg->matrix2[i]);
+    }
+
+    construct_Blocks(blocks_list, mat2, N);
+    subs_Transport(edges, blocks_list, n, N);
+    subs_Extend(edges, blocks_list, n, N);
+
+    setSize(edges, n, N);
+
+    error[0] = check_EdgesLogic(edges, blocks_list, n);
+    error[1] = check_EdgesQuantity(edges, blocks_list);
+    error[2] = check_EdgesStupid(matrix, n);
+    error[3] = check_InitialBlocks(arr, blocks_list);
+
+    for(int i=0; i < 4; i++){
+        if(error[i] < 0){
+            std_msgs::Int8 e;
+            e.data = error[i];
+            pub_errors.publish(e);
+            return;
+        }
+    }
   }
   return;
 }
@@ -1127,13 +1177,60 @@ int main(int argc, char **argv)
   pub_vel = node.advertise<serp::Velocity>("/vel", 1);
   serp::Velocity vel;
 
+  pub_errors = node.advertise<std_msgs::Int8>("/error_logic", 1);
+
+  bool first_iteration = true;
+  bool init = true;
+
   while(ros::ok()){
+    if(graph.N < 0){
+        std::vector< int > last_arr; // vector with last cycle tokens
+        copy(arr.begin(), arr.end(), back_inserter(last_arr));
+
+        if (init)
+        {
+            // give token to the first blocks
+            give_InitToken(graph.head, blocks_list, N, arr);
+            init = false;
+        }
+        else
+        {
+            //update tokens
+            check_Token(graph.head, N, arr, blocks_list);
+        }
+
+        //update blocks outputs
+        update_BlocksOutputs(graph.head, blocks_list, arr, edges, out_vel, real_vel, sensors);
+
+        // update any timer
+        //updateTimers(diagraph.head, blocks_list, arr, out_vel);
+
+        if (!first_iteration)
+        {
+            init = !checkIfChanged(arr, last_arr);
+        }
+
+        first_iteration = false;
+            
+        //PRINTS
+    /*     cout << "Tokens:" << endl;
+        for (int i = 0; i < arr.size(); i++)
+        {
+            cout << arr[i] << endl;
+        }
+        cout << "Outputs:" << endl;
+        for (int i = 0; i < blocks_list.size(); i++)
+        {
+            cout << blocks_list[i].id << " " << blocks_list[i].out_f << " " << blocks_list[i].out_b << endl;
+        } */
+    }
+
     vel.vel_motor_left = out_vel[0];
     vel.vel_motor_right = out_vel[1];
     pub_vel.publish(vel);
     ros::spinOnce();
   }
 
-  ros::spin();
+  cleanDiaGraph();
   return 0;
 }

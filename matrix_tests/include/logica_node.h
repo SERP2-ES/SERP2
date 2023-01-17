@@ -7,10 +7,12 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include <cstdint>
 
 ///ROS MSGs includes
 #include <serp/Matrix.h> 
 #include <serp/Velocity.h>
+#include <std_msgs/Int8.h>
 
 #define SUM 0
 #define PRODUCT 1
@@ -72,9 +74,15 @@ struct graphEdge {
     int input_id; // 1,2 or 3
 };
 
-ros::Publisher pub_vel;
+struct DiaGraph{
+    int N;
+    adjNode** head;
+};
+
+ros::Publisher pub_vel, pub_errors;
 
 int error[4];
+int N;
 
 //velocity to apply to the motors
 float out_vel[2] = { 0,0 }; // 1st - left, 2nd - right
@@ -85,8 +93,13 @@ float real_vel[2] = { 0,0 }; // 1st - left, 2nd - right
 //sensors (order: left, right, front, back)
 float sensors[4] = { 0,0,0,0 };
 
+std::vector< int > arr; 
+
 int left, right, front, back;
 
 std::vector <graphEdge> edges;
+std::vector <blocks> blocks_list;
+
+DiaGraph graph;
 
 #endif
