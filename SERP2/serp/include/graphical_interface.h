@@ -45,6 +45,7 @@ ros::ServiceClient client_battery_level;
 ros::ServiceClient client_read_programming_sheet;
 image_transport::ImageTransport *it;
 ros::Publisher pub_robot_state;
+image_transport::Publisher captured_frame;
 
 enum RobotState {
     Stopped,

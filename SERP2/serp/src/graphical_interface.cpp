@@ -3,6 +3,8 @@
 void gtk_dialog_destroy(GtkDialog *dialog, gint response_id, gpointer user_data);
 void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data);
 void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer data);
+cv::Mat frame;
+
 
 // Set the style provider for the widgets
 static void apply_css_provider(GtkWidget *widget, GtkCssProvider *cssstyleProvider)
@@ -106,7 +108,6 @@ gboolean setImage(gpointer data) {
     GdkPixbuf* buf = (GdkPixbuf*)data;
     gtk_image_set_from_pixbuf(camera_image_frame, buf);
     g_object_unref(buf);
-    g_mutex_unlock(&mutex_camera);
     return false;
 }
 
@@ -143,10 +144,11 @@ gboolean showLastDetectedSheet(gpointer data) {
     g_signal_connect(new_window, "destroy", G_CALLBACK (gtk_widget_destroy), NULL);
     g_signal_connect(G_OBJECT(new_window), "configure-event", G_CALLBACK(cb_gtk_resize_last_image), NULL);
     GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_min_content_width(GTK_SCROLLED_WINDOW(scrolled_window), 557);
-    gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window), 421);
+    gtk_scrolled_window_set_min_content_width(GTK_SCROLLED_WINDOW(scrolled_window), 800);
+    gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window), 700);
     gtk_container_add(GTK_CONTAINER(new_window), scrolled_window);
     gtk_container_add(GTK_CONTAINER(scrolled_window), dialog_image);
+    gtk_window_set_position(GTK_WINDOW(new_window), GTK_WIN_POS_CENTER);
     gtk_widget_show_all(new_window);
     return false;
 }
@@ -171,7 +173,7 @@ void cb_camera_img(const sensor_msgs::ImageConstPtr &msg) {
     }
 }
 
-void cb_camera_detections(const sensor_msgs::ImageConstPtr &msg) {
+/*void cb_camera_detections(const sensor_msgs::ImageConstPtr &msg) {
     if(g_mutex_trylock(&mutex_camera_detections)) {
         // Convert ROS message to OpenCV Mat
         cv_bridge::CvImagePtr cv_ptr;
@@ -186,7 +188,7 @@ void cb_camera_detections(const sensor_msgs::ImageConstPtr &msg) {
         g_object_unref(last_pixbuf_rgb);
         g_mutex_unlock(&mutex_camera_detections);
     }
-}
+}*/
 
 void gtk_update_robot_state() {
     std::string state, log_message;
@@ -304,6 +306,28 @@ void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer dat
     last_detected_image_last_height = height;
 }
 
+void* cb_usb_livefeed(gpointer data)
+{
+    cv::VideoCapture cap("/dev/video1");
+    if(!cap.isOpened()) {
+        ROS_ERROR("Can't open usb camera!");
+    }
+    while(ros::ok())
+    {
+        cap.read(frame);
+        // Update LiveFeed
+    
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        GdkPixbuf *pixbuf_rgb;
+        pixbuf_rgb = gdk_pixbuf_new_from_data(frame.data, GDK_COLORSPACE_RGB,FALSE, 8,
+                                                    frame.cols, frame.rows, frame.step, 0, NULL);
+        g_idle_add ((GSourceFunc) setImage, pixbuf_rgb);
+
+    }
+    cap.release();
+    return NULL;
+}
+
 int main(int argc, char *argv[])
 {
     GtkBuilder *builder;
@@ -343,7 +367,6 @@ int main(int argc, char *argv[])
     button_global_stop = GTK_WIDGET(gtk_builder_get_object(builder, "button_global_stop"));
     label_robot_state = GTK_LABEL(gtk_builder_get_object(builder, "robot_state"));
     camera_image_frame = GTK_IMAGE(gtk_builder_get_object(builder, "camera_frame"));
-    usb_image_frame = GTK_IMAGE(gtk_builder_get_object(builder, "usb_camera"));
 
     // Create text buffer iterator
     log_text_iter = new GtkTextIter();
@@ -371,12 +394,14 @@ int main(int argc, char *argv[])
     client_read_programming_sheet = n_public.serviceClient<std_srvs::Trigger>("srv_read_programming_sheet");
 
     // Create ROS Subscribers
-    it = new image_transport::ImageTransport(n_public);
+    //it = new image_transport::ImageTransport(n_public);
+    image_transport::ImageTransport it(n_public);
+    captured_frame = it.advertise("raw_frame", 1);
     // Subscribe camera image
-    image_transport::Subscriber sub_camera_image = it->subscribe("camera", 1, cb_camera_img);
+    //image_transport::Publisher captured_frame = it->advertise("raw_frame", 1);
     // Subscribe detected programming sheets
-    image_transport::Subscriber sub_detected_sheets = it->subscribe("camera/sheet_detections", 1, cb_camera_detections);
-
+    //image_transport::Subscriber sub_detected_sheets = it->subscribe("camera/sheet_detections", 1, cb_camera_detections);
+    
     // Create ROS Publisher
     pub_robot_state = n_public.advertise<std_msgs::String>("robot_state", 2);
 
@@ -387,6 +412,10 @@ int main(int argc, char *argv[])
     thread_timer = g_thread_new("Timer", cb_timer10s, NULL);
     thread_ros_sub = g_thread_new("Ros Spin", cb_ros_spin, NULL);
 
+    // NOVO CODIGO
+    // criar thread para live feed da usb camera
+    GThread *thread_usb_camera;
+    thread_usb_camera = g_thread_new("USB Camera", cb_usb_livefeed, NULL);
 
     g_object_unref(css);
     g_object_unref(G_OBJECT(builder));
@@ -502,6 +531,27 @@ extern "C"
             std_srvs::Trigger srv;
             if(client_read_programming_sheet.call(srv) && srv.response.success) {
                 
+                cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+                GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data(frame.data, GDK_COLORSPACE_RGB, FALSE, 8,
+                                                                     frame.cols, frame.rows, frame.step, NULL, NULL);
+                dialog_image = gtk_image_new();
+                gtk_image_set_from_pixbuf(GTK_IMAGE(dialog_image), last_pixbuf_rgb);
+                g_object_unref(last_pixbuf_rgb);
+                g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
+
+
+                // Convert OpenCV image to ROS data
+                cv_bridge::CvImage img_bridge;
+                sensor_msgs::Image img_msg;
+                std_msgs::Header header;
+                header.stamp = ros::Time::now();
+                img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, frame);
+                img_bridge.toImageMsg(img_msg);
+
+                captured_frame.publish(img_msg);
+
+
+
                 robot.state = ReadingProgrammingSheet;
                 gtk_update_robot_state();
             }
