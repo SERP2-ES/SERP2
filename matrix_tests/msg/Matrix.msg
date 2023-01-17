@@ -1,4 +1,4 @@
-std_msgs/Bool manual_mode
+bool manual_mode
 
 int8 vel_motor_left
 int8 vel_motor_right

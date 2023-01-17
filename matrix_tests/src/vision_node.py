@@ -8,7 +8,7 @@ import cv2 as cv
 from cv_bridge import CvBridge, CvBridgeError
 from serp.msg import Matrix
 bridge = CvBridge()
-#import numpy as np
+import numpy as np
 
 #from PIL import Image 
 #import glob
@@ -290,13 +290,13 @@ def setEndLine(x, y, line, pos):
   return
 
 #Function to assign start and end of a line to an ArUco
-def assignLines2ArUcos(ids, corners, labels_im):
+def assignLines2ArUcos(ids, corners, num_labels, labels_im):
 
   # Vector for ArUcos 
   aruco_lines = -np.ones((len(ids),4))
 
   # Vector for start and final pos of each line: x_start | y_start | x_end | xy_end
-  lines = -np.ones((len(ids),4))
+  lines = -np.ones((num_labels,4))     # Original: lines = -np.ones((len(ids),4))
 
   id=0
   for i, corner in zip(ids, corners):
@@ -507,13 +507,14 @@ def interpretImageCaptured(image, fisheye):
   thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
   # Show
-  #plotImage(thresh,14)
+  #cv.imshow("thresh", thresh)
+  #cv.waitKey(0) # waits until a key is pressed
 
   # Separate lines
   num_labels, labels_im = cv.connectedComponents(thresh)
 
   # Assign lines to ArUcos
-  aruco_lines, lines = assignLines2ArUcos(ids, corners, labels_im)
+  aruco_lines, lines = assignLines2ArUcos(ids, corners, num_labels, labels_im)
 
   aux = np.zeros((len(ids),2))
   for i in range(0,len(ids)):
@@ -533,6 +534,8 @@ def interpretImageCaptured(image, fisheye):
     start_point = (int(lines[i][0]), int(lines[i][1]))
     end_point = (int(lines[i][2]), int(lines[i][3]))
     img = cv.line(img, start_point, end_point, (50, 100, 255), 4)
+
+  img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
   return 1, aruco_lines[:,1], output_Logic, img
 
@@ -577,11 +580,14 @@ def callBack(data):
         pub_error.publish(-2)
     # If no errors send matrix to logic
     else:
+        rospy.loginfo('NOT ERROR! incrivel se entrar aqui!!')
+        cv.imshow("final_img", img)
+        cv.waitKey(0) # waits until a key is pressed
         mat = Matrix()
         mat.manual_mode = False
         mat.matrix1 = logic1
-        mat.matrix2 = logic2
-        rospy.loginfo(logic1) # SEND LOGIC
+        mat.matrix2 = logic2.flatten()
+        #rospy.loginfo(logic1) # SEND LOGIC
         pub_logic1.publish(mat)
         
         #pub_img.publih(img)
