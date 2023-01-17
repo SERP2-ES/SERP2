@@ -81,13 +81,13 @@ def checkArucoOrientation(ids,corners):
 
 #Functions to give border limits of ArUcos
 def getXLeft(corner):
-  return int(corner[0][0][0]-8)
+  return int(np.mean([corner[0][0][0],corner[0][3][0]])-8)    
 def getYTop(corner):
-  return int(corner[0][0][1]-12)
+  return int(np.mean([corner[0][0][1], corner[0][1][1]])-12)
 def getXRight(corner):
-  return int(corner[0][2][0]+8)
+  return int(np.mean([corner[0][1][0], corner[0][2][0]])+8)
 def getYBot(corner):
-  return int(corner[0][2][1]+8)
+  return int(np.mean([corner[0][3][1], corner[0][2][1]])+8)
 
 def findThresh(hist, limiar):
   pos1 = pos2 = 0
@@ -533,8 +533,8 @@ def interpretImageCaptured(image, fisheye):
   aruco_lines = np.concatenate((aux, aruco_lines), axis=1)
 
   # Show
-  cv.imshow("IMGGG", img)
-  cv.waitKey(0) # waits until a key is pressed
+  #cv.imshow("image", img)
+  #cv.waitKey(0) # waits until a key is pressed
 
   # Draw lines in image
   for i in range(0,len(lines)):
