@@ -12,7 +12,7 @@ int main(int argc, char **argv)
   ros::NodeHandle node;
 
   //IMAGEM
-  /* cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/1.jpg");
+  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/1.jpg");
 
   if (img.empty())
   {
@@ -27,10 +27,10 @@ int main(int argc, char **argv)
   msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
   ros::Duration(2).sleep();
   msg->header.stamp = ros::Time::now();
-  img_pub.publish(msg); */
+  img_pub.publish(msg);
 
   //MATRIZ
-  serp::Matrix mat;
+/*   serp::Matrix mat;
 
   mat.manual_mode = true;
   mat.vel_motor_left = 30;
@@ -45,6 +45,6 @@ int main(int argc, char **argv)
   ros::Duration(5).sleep();
   mat_pub.publish(mat);
 
-  ros::spin();
+  ros::spin(); */
   return 0;
 }

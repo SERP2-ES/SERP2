@@ -25,6 +25,10 @@ def undistort(img):
     h,w = img.shape[:2]
     map1, map2 = cv.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv.CV_16SC2)
     undistorted_img = cv.remap(img, map1, map2, interpolation=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT)
+
+    #cv.imshow("undis", undistorted_img)
+    #cv.waitKey(0) # waits until a key is pressed
+
     #plotImage(undistorted_img, 14)
     #cv.imwrite('undis_' + img_path, undistorted_img)
     #cv.waitKey(0)
@@ -72,8 +76,8 @@ def checkArucoOrientation(ids,corners):
     if (corner[0][0][0] < corner[0][1][0]) and (corner[0][0][1]<corner[0][3][1]):
       continue
     print('ERROR: ArUco', int(i), '- WRONG ORIENTATION!')
-    return 1
-  return -1   
+    return -1
+  return 1
 
 #Functions to give border limits of ArUcos
 def getXLeft(corner):
@@ -433,7 +437,7 @@ def interpretImageCaptured(image, fisheye):
 
   if fisheye:
     # Remove distortion
-    img = undistort(image)
+    image = undistort(image)
 
   # Convert to RGB
   img = cv.cvtColor(image, cv.COLOR_BGR2RGB)
@@ -467,7 +471,8 @@ def interpretImageCaptured(image, fisheye):
   corners, ids, rejectedImgPoints = cv.aruco.detectMarkers(img, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
 
   # Check ArUco orientation
-  checkArucoOrientation(ids, corners)
+  if checkArucoOrientation(ids, corners) == -1:
+      return -3, None, None, None
 
   aruco_corner = [28, 29, 30, 31]
 
@@ -478,7 +483,8 @@ def interpretImageCaptured(image, fisheye):
         if i in aruco_corner:
           continue
         cv.rectangle(img_lines, (getXLeft(corner), getYTop(corner)), (getXRight(corner), getYBot(corner)), (255, 255, 255), -1)
-      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
+      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, borderColor=(0, 255, 0))
+      #img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
   else:
       #print("NO ArUcos DETECTED")
       return -2, None, None, None
@@ -498,7 +504,6 @@ def interpretImageCaptured(image, fisheye):
 
   # Binarization
   threshold = findThresh(dst, 3)
-  threshold = 102
   #print('Threshold: ', threshold)
   _,thresh = cv.threshold(grey,threshold,255,cv.THRESH_BINARY_INV)
 
@@ -526,6 +531,10 @@ def interpretImageCaptured(image, fisheye):
 
   #Vector: ID | ID_ARUCO | INPUTS/OUTPUTS(LINES)
   aruco_lines = np.concatenate((aux, aruco_lines), axis=1)
+
+  # Show
+  cv.imshow("IMGGG", img)
+  cv.waitKey(0) # waits until a key is pressed
 
   # Draw lines in image
   for i in range(0,len(lines)):
@@ -570,7 +579,7 @@ def callBack(data):
     #cv.waitKey(0) # waits until a key is pressed
     
     # Analyses image
-    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=False)
+    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=True)
     # Check errors
     if (ret == -1):
         rospy.loginfo('ERROR: NOT ALL CORNERS DETECTED')
@@ -578,6 +587,9 @@ def callBack(data):
     elif (ret == -2):
         rospy.loginfo('ERROR: NO ArUcos DETECTED')
         pub_error.publish(-2)
+    elif (ret == -3):
+        rospy.loginfo('ERROR: WRONG ORIENTATION ArUcos DETECTED')
+        pub_error.publish(-3)
     # If no errors send matrix to logic
     else:
         rospy.loginfo('NOT ERROR! incrivel se entrar aqui!!')
