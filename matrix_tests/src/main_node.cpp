@@ -12,7 +12,7 @@ int main(int argc, char **argv)
   ros::NodeHandle node;
 
   //IMAGEM
-  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/1.jpg");
+  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/01.jpg");
 
   if (img.empty())
   {
@@ -21,12 +21,14 @@ int main(int argc, char **argv)
   }
 
   image_transport::ImageTransport it(node);
-  image_transport::Publisher img_pub = it.advertise("/image", 3);
+  image_transport::Publisher img_pub = it.advertise("/image", 1);
 
   sensor_msgs::ImagePtr msg;
   msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
-  ros::Duration(2).sleep();
+  ros::Duration(10).sleep();
   msg->header.stamp = ros::Time::now();
+
+  ROS_INFO("Published image\n");
   img_pub.publish(msg);
 
   //MATRIZ

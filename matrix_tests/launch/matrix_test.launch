@@ -4,10 +4,10 @@
     <node pkg="serp" type="main_node" name="gui" output="screen">
     </node>
 
-    <!-- <node pkg="serp" type="vision_node.py" name="vision" output="screen">
-    </node> -->
+    <node pkg="serp" type="vision_node.py" name="vision_node" output="screen">
+    </node> 
 
-    <node pkg="serp" type="logic_node" name="logic" output="screen">
+    <node pkg="serp" type="logic_node" name="logic_node" output="screen">
     </node>
 
 

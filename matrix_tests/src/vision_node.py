@@ -593,8 +593,8 @@ def callBack(data):
     # If no errors send matrix to logic
     else:
         rospy.loginfo('NOT ERROR! incrivel se entrar aqui!!')
-        cv.imshow("final_img", img)
-        cv.waitKey(0) # waits until a key is pressed
+        #cv.imshow("final_img", img)
+        #cv.waitKey(0) # waits until a key is pressed
         mat = Matrix()
         mat.manual_mode = False
         mat.matrix1 = logic1
@@ -610,6 +610,8 @@ def main():
 
     # Subscriber
     rospy.Subscriber("/image", Image, callBack)
+
+    rospy.loginfo('Vsion node')
 
     # Publishers
         # Defined above
