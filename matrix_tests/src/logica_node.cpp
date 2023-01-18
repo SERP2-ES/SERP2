@@ -1,14 +1,294 @@
 #include "logica_node.h"
 
+bool checkIfChanged(std::vector <int> tokens_previous)
+{
+    std::sort(tokens_previous.begin(), tokens_previous.end());
+    std::sort(tokens.begin(), tokens.end());
+
+    if (tokens_previous == tokens)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void update_BlocksOutputs()
+{
+    //avaliar os vertices com token
+    for (int i = 0; i < blocks_list.size(); i++)
+    {
+        if (std::find(tokens.begin(), tokens.end(), blocks_list[i].id) != tokens.end()) // verifica apenas os com token
+        {
+            std::vector< int > inputs; // vector para guardar os inputs do bloco
+            
+             // guarda no array todos os inputs necessarios
+            for (int j = 0; j < edges.size(); j++)
+            {
+                if(edges.at(j).end_ver == blocks_list.at(i).id){
+                    inputs.push_back(edges.at(j).start_ver);
+                }
+            }
+           
+
+            if (inputs.size() == 0) // initial token (motor, sensor or constant)
+            {
+                if (blocks_list[i].type == "constant")
+                {
+                    blocks_list[i].out_f = float(blocks_list[i].class_id) - (float) 14; // 14 is the class_id of zero
+                    blocks_list[i].constant.push_back(int(blocks_list[i].out_f) + 48); // ASCII
+                }
+                else if (blocks_list[i].type == "sensor")
+                {
+                    blocks_list[i].out_f = sensors[blocks_list[i].class_id - 9]; // 9 is the class_id of s_left
+                }
+            }
+
+            else // sequential token, need to check previous blocks outputs
+            {
+                int p1, p2, pc; //var. auxiliar para guardar id's dos blocos
+                p1 = p2 = pc = -1;
+
+                float f1, f2; //var. auxiliar para guardar output (float)
+                bool b1, b2, bc; //var. auxiliar para guardar output (bool)
+                std::string ct = ""; //var. auxiliar para guardar constant (string)
+                f1 = f2 = NAN;
+                b1 = b2 = bc = NULL;
+
+                for (int j = 0; j < inputs.size(); j++) //guarda os id's dos inputs na respetiva posicao
+                {
+                    for (int k = 0; k < edges.size(); k++)
+                    {
+                        if ((edges[k].start_ver == inputs[j]) && (edges[k].end_ver == blocks_list[i].id)) // procura edge para os inputs
+                        {
+                            if (edges[k].input_id == 1) p1 = inputs[j];
+                            else if (edges[k].input_id == 2) p2 = inputs[j];
+                            else if (edges[k].input_id == 3) pc = inputs[j];
+                        }
+                    }
+                }
+                    
+                for (int j = 0; j < blocks_list.size(); j++) // guardar outputs anteriores em var. auxiliares
+                {
+                    if (blocks_list[j].id == p1)
+                    {
+                        f1 = blocks_list[j].out_f;
+                        b1 = blocks_list[j].out_b;
+                        if (blocks_list[j].constant != "") { ct = blocks_list[j].constant; }
+                    }
+                    else if (blocks_list[j].id == p2)
+                    {
+                        f2 = blocks_list[j].out_f;
+                        b2 = blocks_list[j].out_b;
+                    }
+                    else if (blocks_list[j].id == pc)
+                    {
+                        bc = blocks_list[j].out_b;
+                    }
+                }
+
+                // tendo em conta o tipo do bloco atual, e os outputs anteriores, atribuir um output ao bloco atual 
+                if (blocks_list[i].name == "sum")
+                {
+                    blocks_list[i].out_f = f1 + f2;
+                }
+                else if (blocks_list[i].name == "product")
+                {
+                    blocks_list[i].out_f = f1 * f2;
+                }
+                else if (blocks_list[i].name == "simetric")
+                {
+                    blocks_list[i].out_f = -f1;
+                }
+                else if (blocks_list[i].name == "mux")
+                {
+                    if (bc)
+                    {
+                        blocks_list[i].out_f = f1;
+                        blocks_list[i].out_b = b1;
+                    }
+                    else
+                    {
+                        blocks_list[i].out_f = f2;
+                        blocks_list[i].out_b = b2;
+                    }  
+                }
+                else if (blocks_list[i].name == "if")
+                {
+                    if (bc)
+                    {
+                        blocks_list[i].out_f = f1;
+                        blocks_list[i].out_b = b1;
+                    }
+                }
+                else if (blocks_list[i].name == "else_if")
+                {
+                    if (bc)
+                    {
+                        blocks_list[i].out_f = f1;
+                        blocks_list[i].out_b = b1;
+                    }
+                    else
+                    {
+                        blocks_list[i].out_f = f2;
+                        blocks_list[i].out_b = b2;
+                    }
+                }
+                else if (blocks_list[i].name == "and")
+                {
+                    blocks_list[i].out_b = b1 && b2;
+                }
+                else if (blocks_list[i].name == "or")
+                {
+                    blocks_list[i].out_b = b1 || b2;
+                }
+                else if (blocks_list[i].name == "less")
+                {
+                    blocks_list[i].out_b = (f1 < f2);
+                }
+                else if (blocks_list[i].name == "greater")
+                {
+                    blocks_list[i].out_b = (f1 > f2);
+                }
+                else if (blocks_list[i].name == "equal")
+                {
+                    blocks_list[i].out_b = (f1 == f2);
+                }
+                else if (blocks_list[i].name == "m_left")
+                {
+                    out_vel[0] = f1;
+                    blocks_list[i].out_f = f1;
+                }
+                else if (blocks_list[i].name == "m_right")
+                {
+                    out_vel[1] = f1;
+                    blocks_list[i].out_f = f1;
+                }
+                else if (blocks_list[i].name == "s_left")
+                {
+                    blocks_list[i].out_f = sensors[0];
+                }
+                else if (blocks_list[i].name == "s_right")
+                {
+                    blocks_list[i].out_f = sensors[1];
+                }
+                else if (blocks_list[i].name == "s_front")
+                {
+                    blocks_list[i].out_f = sensors[2];
+                }
+                else if (blocks_list[i].name == "s_back")
+                {
+                    blocks_list[i].out_f = sensors[3];
+                }
+                else if (blocks_list[i].name == "comma")
+                {
+                    ct = ct.append(".");
+                    blocks_list[i].constant = ct;
+                    blocks_list[i].out_f = f1;
+                }
+                else if (blocks_list[i].type == "constant" && !(blocks_list[i].name == "comma"))
+                {
+                    int num = blocks_list[i].class_id - 14; // 14 is the class_id of zero
+                    ct.push_back(num+48); // ASCII
+                    blocks_list[i].constant = ct;
+                    blocks_list[i].out_f = strtof(ct.c_str(), NULL);
+                }
+                else if (blocks_list[i].name == "delay")
+                {
+                    if (blocks_list[i].timer == NULL)
+                    {
+                        blocks_list[i].timer = clock() + (CLOCKS_PER_SEC * f2);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void cleanVariables(){
     edges.clear();
     blocks_list.clear();
     tokens.clear();
-    for (int i = 0; i < num_block; i++)
-        delete[] graph.head[i];
-    delete[] graph.head;
     num_block = num_rows = num_col = 0;
-    graph.N=0;
+}
+
+void check_Token()
+{
+    std::vector< int > add; // tokens a adicionar no fim
+    std::vector< int > rem; // tokens a remover no fim
+    
+    // search in heap
+    for (int i = 0; i < num_block; i++)
+    {   
+        if (!(std::find(tokens.begin(), tokens.end(), blocks_list.at(i).id) != tokens.end())) // verifica apenas os sem token
+        { 
+            std::vector< int > inputs; // vector para guardar os inputs do bloco
+            bool timers_done = false;
+
+            // guarda no array todos os inputs necessarios
+            for (int j = 0; j < edges.size(); j++)
+            {
+                if(edges.at(j).end_ver == blocks_list.at(i).id){
+                    inputs.push_back(edges.at(j).start_ver);
+                }
+            }
+
+            // verifica se todos os inputs tem token
+            int count = 0;
+            for (int k = 0; k < inputs.size(); k++) 
+            {
+                for (int l = 0; l < tokens.size(); l++) 
+                {
+                    if (inputs[k] == tokens[l])
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            // verifica eventuais timers
+            int num_timers = 0;
+            for (int j = 0; j < num_block; j++)
+            {
+                if (std::find(inputs.begin(), inputs.end(), blocks_list[j].id) != inputs.end())
+                {
+                    if (blocks_list[j].type == "timer")
+                    {
+                        num_timers++;
+                        if (blocks_list[j].time_done)
+                        {
+                            timers_done = true;
+                        }
+                        else
+                        {
+                            timers_done = false;
+                        }
+                    }
+                }
+            }
+            if (num_timers == 0) timers_done = true;
+            
+            if (count == inputs.size() && inputs.size() > 0 && timers_done)
+            {
+                add.push_back(blocks_list[i].id);
+                for (int k = 0; k < inputs.size(); k++)
+                {
+                    rem.push_back(inputs[k]);
+                }
+            }
+        }
+    }
+    
+    //atualizar array com os token
+    for (int i = 0; i < rem.size(); i++)
+    {
+        tokens.erase(std::remove(tokens.begin(), tokens.end(), rem[i]), tokens.end());
+    }
+    for (int i = 0; i < add.size(); i++)
+    {
+        tokens.push_back(add[i]);
+    }
+
 }
 
 void give_InitToken()
@@ -20,14 +300,9 @@ void give_InitToken()
     }
 
     // remove vertices that arent initials
-    for (int i = 0; i < num_block; i++) 
+    for (int i = 0; i < edges.size(); i++) 
     {
-        adjNode* ptr = graph.head[i];
-
-        while (ptr != nullptr) {
-            tokens.erase(std::remove(tokens.begin(), tokens.end(), ptr->val), tokens.end());
-            ptr = ptr->next;
-        }
+        tokens.erase(std::remove(tokens.begin(), tokens.end(), edges.at(i).end_ver), tokens.end());
     }
     
     // remove duplicate values from vector
@@ -36,6 +311,7 @@ void give_InitToken()
         end = std::remove(it + 1, end, *it);
     }
     tokens.erase(end, tokens.end());
+    copy(tokens.begin(), tokens.end(), back_inserter(init));
 }
 
 int check_InitialBlocks(std::vector <int> tokens, std::vector <blocks> blocks)
@@ -48,7 +324,8 @@ int check_InitialBlocks(std::vector <int> tokens, std::vector <blocks> blocks)
             {
                 if ((blocks[j].type == "operator") || (blocks[j].type == "choice") || (blocks[j].type == "comparator") ||
                     (blocks[j].type == "timer") || (blocks[j].type == "transport") || (blocks[j].type == "extend") ||
-                    (blocks[j].name == "comma"))
+                    (blocks[j].name == "comma") ||
+                    (blocks[j].type == "motor"))
                 {
                     return -4;
                 }
@@ -313,34 +590,6 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
     return 0;
 }
 
-adjNode* getAdjListNode(int value, adjNode* head) {
-    adjNode* newNode = new adjNode;
-    newNode->val = value;
-    newNode->next = head;   // poinh{} new node to current head
-    return newNode;
-}
-
-void setSize(){
-    graph.head = new adjNode * [num_block]();
-    graph.N = num_block;
-
-    // initialize head pointer for all vertices
-    for (int i = 0; i < num_block; ++i)
-        graph.head[i] = nullptr;
-
-    // construct directed graph by adding edges to it
-    for (int i = 0; i < num_rows; i++) {
-        int start_ver = edges[i].start_ver;
-        int end_ver = edges[i].end_ver;
-
-        // insert in the beginning
-        adjNode* newNode = getAdjListNode(end_ver, graph.head[start_ver]);
-
-        // point head pointer to new node
-        graph.head[start_ver] = newNode;
-    }
-}
-
 void matrix_ToEdges(std::vector< std::vector<int>> matrix)
 {    
     // matrix to edges
@@ -379,6 +628,11 @@ void matrix_ToEdges(std::vector< std::vector<int>> matrix)
         graphEdge gE = { start, end, out, inp };
         edges.push_back(gE);
     }
+
+    // std::cout << "EDGES" << std::endl;
+    // for(int i = 0; i < edges.size(); i++ ){
+    //     std::cout << edges.at(i).start_ver << <<  << std::endl;
+    // }
 } 
 
 void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos os blocos
@@ -386,7 +640,7 @@ void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos
     for (int i = 0; i < N; i++)
     {
         blocks newBlock;
-        newBlock.id = i;
+        newBlock.id = i+1;
         newBlock.class_id = id[i];
         newBlock.out_f = NAN;
         newBlock.out_b = NAN;
@@ -530,6 +784,11 @@ void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos
 
         blocks_list.push_back(newBlock);
     }
+
+    // std::cout << "BLOCK_LIST" << std::endl;
+    // for(int i = 0; i < blocks_list.size(); i++ ){
+    //     std::cout << blocks_list.at(i) << std::endl;
+    // }
 }
 
 void subs_Extend()
@@ -551,18 +810,29 @@ void subs_Extend()
                         {   
                             graphEdge edge;
                             edge = { edges[k].start_ver, edges[l].end_ver, edges[k].output_id, edges[l].input_id };
+                            
+                            std::cout << "Bloco ID: " << blocks_list[i].id << std::endl;
 
+                            std::cout << "EDGES" << std::endl;
+                            for(int x = 0; x < edges.size(); x++ ){
+                                std::cout << edges.at(x).start_ver << " "<< edges.at(x).end_ver << std::endl;
+                            }
+
+                            std::cout << "Nova Edge: " << edge.start_ver << " " << edge.end_ver << std::endl;
+                            std::cout << "K: " << k << " " << "L: " << l << std::endl;
+                            
+                            
                             // remove and add 1st edge
                             if (count == 0)
                             {
                                 edges.erase(edges.begin() + l);
                                 edges.push_back(edge);
-                                k = l = 0;
                                 count++;
                             }
                             else // remove 2 edges and add 2nd edge
                             {
                                 edges.erase(edges.begin() + k);
+
                                 if (l < k)
                                 {
                                     edges.erase(edges.begin() + l);
@@ -578,6 +848,11 @@ void subs_Extend()
                             }
                         }
                     }
+                }
+
+                if (count == 1)
+                {
+                    k = 0;
                 }
             }
 
@@ -610,7 +885,7 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
         num_rows = msg->matrix2.size() / 5;
         num_col = 5;
         std::vector<int> matrix1;
-        for(int i; i < num_block; i++){
+        for(int i=0; i < num_block; i++){
             matrix1.push_back(msg->matrix1[i]);
         }
 
@@ -625,33 +900,42 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
             matrix2[i / 5][i % 5] = msg->matrix2[i];
         }
 
-        // print matrix
-        // std::cout << "Matrix 1" << std::endl;
-        // for(int i = 0; i < matrix1.size(); i++ ){
-        //     std::cout << matrix1.at(i) << " ";
-        // }
-        // std::cout << std::endl;
+        //print matrix
+        std::cout << "Matrix 1" << std::endl;
+        for(int i = 0; i < matrix1.size(); i++ ){
+            std::cout << matrix1.at(i) << " ";
+        }
+        std::cout << std::endl;
 
-        // std::cout << "Matrix 2" << std::endl;
-        // for (int i = 0; i < matrix2.size(); i++)
-        // {
-        //     for (int j = 0; j < matrix2[i].size(); j++)
-        //     {
-        //         std::cout << matrix2[i][j] << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
+        std::cout << "Matrix 2" << std::endl;
+        for (int i = 0; i < matrix2.size(); i++)
+        {
+            for (int j = 0; j < matrix2[i].size(); j++)
+            {
+                std::cout << matrix2[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
 
         construct_Blocks(matrix1, num_block);
         matrix_ToEdges(matrix2);
         subs_Extend();
-        setSize();
         give_InitToken();
+
+        std::cout << "EDGES" << std::endl;
+        for(int i = 0; i < edges.size(); i++ ){
+            std::cout << edges.at(i).start_ver << " "<< edges.at(i).end_ver << std::endl;
+        }
 
         error[0] = check_EdgesLogic();
         error[1] = check_EdgesQuantity(edges, blocks_list);
         error[2] = check_EdgesStupid(matrix2, num_rows);
         error[3] = check_InitialBlocks(tokens, blocks_list);
+
+        for(int i=0; i < 4; i++){
+            std::cout << error[i] << std::endl; 
+        }
+
 
         for(int i=0; i < 4; i++){
             if(error[i] < 0){
@@ -662,7 +946,7 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
             }
         }
 
-        std::cout << "ACABOU" << graph.N << std::endl;
+        update_BlocksOutputs();
     }
 }
 
@@ -671,6 +955,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "logic_node");
   
   ros::NodeHandle node;
+  ros::Rate rate(5);
   
   ros::Subscriber matrix_sub = node.subscribe("/matrix", 1, cbMatrix);
   //ros::Subscriber sensors_sub = node.subscribe("/sensors", 1, cbSensors);
@@ -679,13 +964,40 @@ int main(int argc, char **argv)
   out_vel[0] = 0;
   out_vel[1] = 0;
 
-  serp::Velocity vel;
+  int it = 0;
 
+  serp::Velocity vel;
   pub_errors = node.advertise<std_msgs::Int8>("/error_logic", 1);
 
   while(ros::ok()){
     if(matrix_rcv){
-       //std::cout << "HERE" << std::endl;
+        it++;
+
+        std::vector< int > last_tokens; // vector with last cycle tokens
+        copy(tokens.begin(), tokens.end(), back_inserter(last_tokens));
+
+        
+        check_Token();
+        update_BlocksOutputs();
+
+        if(!checkIfChanged(last_tokens)){
+            tokens.clear();
+            copy(init.begin(), init.end(), back_inserter(tokens));
+        }
+
+
+        // std::cout << "TOKENS" << std::endl;
+        // for(int i = 0; i < tokens.size(); i++ ){
+        //     std::cout << tokens.at(i) << std::endl;
+        // }
+
+        // for(int i = 0; i < blocks_list.size(); i++){
+        //     std::cout << "Block id: "<< blocks_list.at(i).id << " - " <<blocks_list.at(i).out_f << std::endl;
+        // }
+
+        // if(it == 10){
+        //     break;
+        // }
     }
     
     vel.vel_motor_left = out_vel[0];

@@ -5,14 +5,21 @@
 #include <image_transport/image_transport.h>
 #include <serp/Matrix.h>
 
+std::string path;
+
+void getParam(ros::NodeHandle &node){
+  node.getParam("/img_path", path);
+}
+
 int main(int argc, char **argv)
 { 
   ros::init(argc, argv, "main_node");
 
   ros::NodeHandle node;
+  //getParam(node);
 
   //IMAGEM
-  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/01.jpg");
+  cv::Mat img = cv::imread("/home/percmap/Documents/ES/SERP2/matrix_tests/resources/img1_edge_quant.jpg");
 
   if (img.empty())
   {
@@ -28,8 +35,8 @@ int main(int argc, char **argv)
   ros::Duration(10).sleep();
   msg->header.stamp = ros::Time::now();
 
-  ROS_INFO("Published image\n");
   img_pub.publish(msg);
+  ROS_INFO("Published image\n");
 
   //MATRIZ
 /*   serp::Matrix mat;

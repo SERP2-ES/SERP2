@@ -7,16 +7,6 @@
 
 ros::Publisher pub_vel, pub_errors;
 
-struct adjNode {
-    int val;
-    adjNode* next;
-};
-
-struct DiaGraph{
-    int N;
-    adjNode** head;
-};
-
 struct graphEdge {
     int start_ver; // start block id
     int end_ver; // end block id
@@ -40,9 +30,10 @@ bool matrix_rcv;
 
 float out_vel[2];
 int error[4];
+int sensors[4];
 
 std::vector <graphEdge> edges;
 std::vector <blocks> blocks_list;
 std::vector<int> tokens;
+std::vector<int> init;
 int num_block, num_rows, num_col;
-DiaGraph graph;

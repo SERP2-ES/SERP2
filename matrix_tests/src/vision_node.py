@@ -483,7 +483,7 @@ def interpretImageCaptured(image, fisheye):
         if i in aruco_corner:
           continue
         cv.rectangle(img_lines, (getXLeft(corner), getYTop(corner)), (getXRight(corner), getYBot(corner)), (255, 255, 255), -1)
-      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, borderColor=(0, 255, 0))
+      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
       #img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
   else:
       #print("NO ArUcos DETECTED")
@@ -579,7 +579,10 @@ def callBack(data):
     #cv.waitKey(0) # waits until a key is pressed
     
     # Analyses image
-    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=True)
+    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=False)
+    # Show image
+    #cv.imshow('sample image', img)
+    #cv.waitKey(0) # waits until a key is pressed
     # Check errors
     if (ret == -1):
         rospy.loginfo('ERROR: NOT ALL CORNERS DETECTED')
@@ -608,10 +611,10 @@ def main():
     # Initialize the node
     rospy.init_node('vision_node', anonymous=True)
 
+    rospy.loginfo('Vision node')
+
     # Subscriber
     rospy.Subscriber("/image", Image, callBack)
-
-    rospy.loginfo('Vsion node')
 
     # Publishers
         # Defined above
@@ -622,4 +625,5 @@ if __name__ == '__main__':
     try:
         main()
     except rospy.ROSInterruptException:
+        
         pass    
