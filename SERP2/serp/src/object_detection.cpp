@@ -55,9 +55,16 @@ uint8_t N = 0, NE = 0, NW = 0, S = 0;
 uint8_t levelDanger(float n)
 {
     //cout << "distancia" << n << endl;
-    
-    if ((n <= 420) && (n > 200))
-        return 1;
+
+    if ((n <= 100) && (n >= 0))
+        return 0; //rpm
+    else if ((n <= 416) && (n > 100))
+        return (uint8_t)(0.3*n-30+0.5);   // Vel (rpm) range from 0 to 95 when 100 <= n <= 416
+    else
+        return 95; //rpm
+
+    /*if ((n <= 420) && (n > 200))
+        return 95;
 
     else if ((n <= 200) && (n > 100))
         return 2;
@@ -65,10 +72,9 @@ uint8_t levelDanger(float n)
     else if ((n <= 100) && (n >= 0))
         return 3;
     else
-        return 0;
+        return 95;*/
 
 }
-
 
 
 //filtra os objetos detetados, e identifica qual o mais pr�ximo, onde calcula o seu perigo
@@ -436,7 +442,7 @@ int main(int argc, char** argv)
     n_public.getParam("recording_path", recording_path);
 
 
-    ros::Publisher object_detection_pub = n_public.advertise<fisheye_camera_simulated_sensors_ros1::ObjectDetection>("/object_detection", 1);
+    ros::Publisher object_detection_pub = n_public.advertise<serp::ObjectDetection>("/sensors", 1);
 
     /*
     // Create a VideoCapture object and open the input file
@@ -486,19 +492,19 @@ int main(int argc, char** argv)
         Camera.grab();
         Camera.retrieve(frame);
 
-        cv::Mat cropped_image = frame(cv::Rect(100, 0, 1300, 1200));
+        //cv::Mat cropped_image = frame(cv::Rect(100, 0, 1300, 1200));
 
         // Resize image to 800x450 (to publish to the GUI)
-        cv::Mat resized_frame;
-        cv::resize(cropped_image, resized_frame, cv::Size(500, 462));
+        //cv::Mat resized_frame;
+        //cv::resize(cropped_image, resized_frame, cv::Size(500, 462));
 
         //Rotate frame 90º
-        cv::rotate(resized_frame, resized_frame, cv::ROTATE_90_CLOCKWISE);
+        //cv::rotate(resized_frame, resized_frame, cv::ROTATE_90_CLOCKWISE);
         //get sensor values
         std::vector<uint8_t> sensor_values = frameProcessing(frame);
-        resized_frame=process_frame(resized_frame, sensor_values);
+        //resized_frame=process_frame(resized_frame, sensor_values);
 
-        fisheye_camera_simulated_sensors_ros1::ObjectDetection obj_det_msg;
+        serp::ObjectDetection obj_det_msg;
         obj_det_msg.left = sensor_values[3];
         obj_det_msg.right = sensor_values[0];
         obj_det_msg.back = sensor_values[2];
@@ -508,17 +514,17 @@ int main(int argc, char** argv)
 
         if(record_mode){
             //cv2.cvtColor(resized_frame,cv2.COLOR_RGB2BGR);
-            video.write(resized_frame);
+            //video.write(resized_frame);
         }
 
         if(debug_mode){
             cv::imshow("Original Frame", frame);
             cv::waitKey(1);
 
-            std::cout << "Resized frame size is: " << resized_frame.size() << "\n";
+            //std::cout << "Resized frame size is: " << resized_frame.size() << "\n";
 
-            cv::imshow("Frame with Detection", resized_frame);
-            cv::waitKey(0);
+            //cv::imshow("Frame with Detection", resized_frame);
+            //cv::waitKey(0);
         }
 
         //ros::spinOnce();

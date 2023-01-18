@@ -11,6 +11,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Int8.h>
+#include <serp/Matrix.h>
 
 // ROS custom services
 #include <serp/VelocitySetPoint.h>
@@ -27,6 +29,8 @@ GtkWidget *widget_robot_state;
 GtkTextView *log_mensagens;
 GtkTextBuffer *log_buffer;
 GtkTextIter *log_text_iter;
+GtkTextIter* log_text_iter_start;
+GtkTextIter* log_text_iter_end;
 GtkWidget *button_manual_go;
 GtkWidget *button_manual_stop;
 GtkWidget *button_global_stop;
@@ -42,10 +46,17 @@ GMutex mutex_camera_detections;
 
 ros::ServiceClient client_velocity_setpoint;
 ros::ServiceClient client_battery_level;
-ros::ServiceClient client_read_programming_sheet;
+
+//dont need this
+//ros::ServiceClient client_read_programming_sheet;
+
 image_transport::ImageTransport *it;
-ros::Publisher pub_robot_state;
 image_transport::Publisher captured_frame;
+ros::Publisher pub_robot_state;
+ros::Publisher vel_matrix;
+
+//dont need this
+//image_transport::Publisher captured_frame;
 
 enum RobotState {
     Stopped,
@@ -63,6 +74,9 @@ struct Robot {
     int8_t battery_level;
 } robot;
 
+cv::Mat frame;
+cv::Mat aux_frame1;
+cv::Mat aux_frame2;
 cv::Mat current_frame;
 cv::Mat last_detected_sheet;
 cv::Mat current_detected_sheet;

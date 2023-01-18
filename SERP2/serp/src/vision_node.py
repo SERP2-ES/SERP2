@@ -1,25 +1,20 @@
 #!/usr/bin/env python
-
-import rospy
-from std_msgs.msg import Int16
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-import numpy as np
-import cv2 as cv
-from PIL import Image 
-import glob
-from matplotlib import pyplot as plt
 import time
+import rospy
+from std_msgs.msg import Int8
+#from std_msgs.msg import String
+from sensor_msgs.msg import Image
+import cv2 as cv
+from cv_bridge import CvBridge, CvBridgeError
+from serp.msg import Matrix
+bridge = CvBridge()
+import numpy as np
+
+#from PIL import Image 
+#import glob
+#import time
 
 ##### START DEFINIG FUNCTIONS #####
-
-#Function to plot images
-def plotImage(img, size):
-  fig, ax = plt.subplots(figsize=(size, size))
-  ax.imshow(img)
-  ax.axis('off')
-  plt.show()
 
 # Undistortion
 def undistort(img):
@@ -30,6 +25,10 @@ def undistort(img):
     h,w = img.shape[:2]
     map1, map2 = cv.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv.CV_16SC2)
     undistorted_img = cv.remap(img, map1, map2, interpolation=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT)
+
+    #cv.imshow("undis", undistorted_img)
+    #cv.waitKey(0) # waits until a key is pressed
+
     #plotImage(undistorted_img, 14)
     #cv.imwrite('undis_' + img_path, undistorted_img)
     #cv.waitKey(0)
@@ -77,18 +76,18 @@ def checkArucoOrientation(ids,corners):
     if (corner[0][0][0] < corner[0][1][0]) and (corner[0][0][1]<corner[0][3][1]):
       continue
     print('ERROR: ArUco', int(i), '- WRONG ORIENTATION!')
-    return 1
-  return -1   
+    return -1
+  return 1
 
 #Functions to give border limits of ArUcos
 def getXLeft(corner):
-  return int(corner[0][0][0]-8)
+  return int(np.mean([corner[0][0][0],corner[0][3][0]])-8)    
 def getYTop(corner):
-  return int(corner[0][0][1]-12)
+  return int(np.mean([corner[0][0][1], corner[0][1][1]])-12)
 def getXRight(corner):
-  return int(corner[0][2][0]+8)
+  return int(np.mean([corner[0][1][0], corner[0][2][0]])+8)
 def getYBot(corner):
-  return int(corner[0][2][1]+8)
+  return int(np.mean([corner[0][3][1], corner[0][2][1]])+8)
 
 def findThresh(hist, limiar):
   pos1 = pos2 = 0
@@ -133,7 +132,7 @@ def findLine(lines, xc, yc, w, h):
         return pixel
   return -1
 
-# Funções apenas para traduzir matriz
+# Funcoes apenas para traduzir matriz
 # Function to print ArUcos IN/OUTputs
 def printArUcosINOUT(vector):
   for id in range(0, len(vector)):
@@ -295,23 +294,23 @@ def setEndLine(x, y, line, pos):
   return
 
 #Function to assign start and end of a line to an ArUco
-def assignLines2ArUcos(ids, corners, labels_im):
+def assignLines2ArUcos(ids, corners, num_labels, labels_im):
 
   # Vector for ArUcos 
   aruco_lines = -np.ones((len(ids),4))
 
   # Vector for start and final pos of each line: x_start | y_start | x_end | xy_end
-  lines = -np.ones((len(ids),4))
+  lines = -np.ones((num_labels,4))     # Original: lines = -np.ones((len(ids),4))
 
   id=0
   for i, corner in zip(ids, corners):
     if arucoType(i)=='DOUBLE':
-      #Definir posição input
+      #Definir posicao input
       xin = getXLeft(corner)-2
       yin = (getYTop(corner)+getYBot(corner))/2
-      #Definir posição output
+      #Definir posicao output
       xout = getXRight(corner)+2
-      yout = (getYTop(corner)+getYBot(corner))/2   # aqui não é melhor colocar o y do top_left ???
+      yout = (getYTop(corner)+getYBot(corner))/2   # aqui nao e melhor colocar o y do top_left ???
       #Get line
       aruco_lines[id][0] = findLine(labels_im, xin, yin, 4, 10)
       aruco_lines[id][3] = findLine(labels_im, xout, yout, 4, 10)
@@ -319,12 +318,12 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setEndLine(xin, yin, lines, int(aruco_lines[id][0]))
       setStartLine(xout, yout, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='TRIPLE':
-      #Definir posição input
+      #Definir posicao input
       xin1 = getXLeft(corner)-2
       yin1 = corner[0][0][1]+5
       xin2 = getXLeft(corner)-2
       yin2 = corner[0][3][1]-5
-      #Definir posição output
+      #Definir posicao output
       xout = getXRight(corner)+2
       yout = (getYTop(corner)+getYBot(corner))/2
       #Get line
@@ -336,7 +335,7 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setEndLine(xin2, yin2, lines, int(aruco_lines[id][1]))
       setStartLine(xout, yout, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='SENSOR':
-      #Definir posição output
+      #Definir posicao output
       xout = getXRight(corner)+2
       yout = (getYTop(corner)+getYBot(corner))/2
       #Get line
@@ -344,15 +343,15 @@ def assignLines2ArUcos(ids, corners, labels_im):
       #Fill lines vector
       setStartLine(xout, yout, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='MUX':
-      #Definir posição input
+      #Definir posicao input
       xin1 = getXLeft(corner)-2
       yin1 = corner[0][0][1]+5
       xin2 = getXLeft(corner)-2
       yin2 = corner[0][3][1]-5
-      #Definir posição condição
+      #Definir posicao condicao
       xcond = (getXLeft(corner)+getXRight(corner))/2
       ycond = getYBot(corner)
-      #Definir posição output
+      #Definir posicao output
       xout = getXRight(corner)+2
       yout = (getYTop(corner)+getYBot(corner))/2
       #Get line
@@ -366,15 +365,15 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setEndLine(xcond, ycond, lines, int(aruco_lines[id][2]))
       setStartLine(xout, yout, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='ELSE_IF':
-      #Definir posição input
+      #Definir posicao input
       xin1 = getXLeft(corner)-2
       yin1 = corner[0][0][1]+5
       xin2 = getXLeft(corner)-2
       yin2 = corner[0][3][1]-5
-      #Definir posição condição
+      #Definir posicao condicao
       xcond = (getXLeft(corner)+getXRight(corner))/2
       ycond = getYTop(corner)
-      #Definir posição output
+      #Definir posicao output
       xout = getXRight(corner)+2
       yout = (getYTop(corner)+getYBot(corner))/2
       #Get line
@@ -388,10 +387,10 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setEndLine(xcond, ycond, lines, int(aruco_lines[id][2]))
       setStartLine(xout, yout, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='EXTENSOR':
-      #Definir posição input
+      #Definir posicao input
       xin = getXLeft(corner)-2
       yin = (getYTop(corner)+getYBot(corner))/2
-      #Definir posição output
+      #Definir posicao output
       xout1 = getXRight(corner)+2
       yout1 = corner[0][1][1]+5
       xout2 = getXRight(corner)+2
@@ -405,7 +404,7 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setStartLine(xout1, yout1, lines, int(aruco_lines[id][2]))
       setStartLine(xout2, yout2, lines, int(aruco_lines[id][3]))
     elif arucoType(i)=='TE':
-      #Definir posição input
+      #Definir posicao input
       xin1 = getXLeft(corner)-2
       yin1 = corner[0][0][1]+5
       xin2 = getXLeft(corner)-2
@@ -417,7 +416,7 @@ def assignLines2ArUcos(ids, corners, labels_im):
       setEndLine(xin1, yin1, lines, int(aruco_lines[id][0]))
       setEndLine(xin2, yin2, lines, int(aruco_lines[id][1]))
     elif arucoType(i)=='TD':
-      #Definir posição output
+      #Definir posicao output
       xout1 = getXRight(corner)+2
       yout1 = corner[0][1][1]+5
       xout2 = getXRight(corner)+2
@@ -434,14 +433,17 @@ def assignLines2ArUcos(ids, corners, labels_im):
 
 
 # Global function to interpret images
-def interpretImageCaptured(image, fisheye: bool):
+def interpretImageCaptured(image, fisheye):
+
+  #cv.imshow('raw', image)
+  #cv.waitKey(0) # waits until a key is pressed
 
   if fisheye:
     # Remove distortion
-    img = undistort(image)
+    image = undistort(image)
 
   # Convert to RGB
-  img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+  img = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
   # ArUco Parameters for Detection
   ARUCO_PARAMETERS = cv.aruco.DetectorParameters_create()
@@ -450,8 +452,17 @@ def interpretImageCaptured(image, fisheye: bool):
   # Detect ArUcos
   corners, ids, rejectedImgPoints = cv.aruco.detectMarkers(img, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
 
+  #if ids is not None:
+  #  img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, borderColor=(0, 255, 0))
+  #cv.imshow('sample image', img)
+  #cv.waitKey(0) # waits until a key is pressed
+  
+    
+
   # Check 4 corners
-  if (cornersInArucos(ids) == False):
+  if ids is None:
+    return -1, None, None, None
+  elif (cornersInArucos(ids) == False):
     return -1, None, None, None
 
   # Perspective Correction
@@ -472,7 +483,8 @@ def interpretImageCaptured(image, fisheye: bool):
   corners, ids, rejectedImgPoints = cv.aruco.detectMarkers(img, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
 
   # Check ArUco orientation
-  checkArucoOrientation(ids, corners)
+  if checkArucoOrientation(ids, corners) == -1:
+      return -3, None, None, None
 
   aruco_corner = [28, 29, 30, 31]
 
@@ -483,7 +495,8 @@ def interpretImageCaptured(image, fisheye: bool):
         if i in aruco_corner:
           continue
         cv.rectangle(img_lines, (getXLeft(corner), getYTop(corner)), (getXRight(corner), getYBot(corner)), (255, 255, 255), -1)
-      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
+      img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, borderColor=(0, 255, 0))
+      #img = cv.aruco.drawDetectedMarkers(image=img, corners=corners, ids=ids, borderColor=(0, 255, 0))
   else:
       #print("NO ArUcos DETECTED")
       return -2, None, None, None
@@ -503,7 +516,6 @@ def interpretImageCaptured(image, fisheye: bool):
 
   # Binarization
   threshold = findThresh(dst, 3)
-  threshold = 102
   #print('Threshold: ', threshold)
   _,thresh = cv.threshold(grey,threshold,255,cv.THRESH_BINARY_INV)
 
@@ -512,13 +524,14 @@ def interpretImageCaptured(image, fisheye: bool):
   thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
   # Show
-  #plotImage(thresh,14)
+  #cv.imshow("thresh", thresh)
+  #cv.waitKey(0) # waits until a key is pressed
 
   # Separate lines
   num_labels, labels_im = cv.connectedComponents(thresh)
 
   # Assign lines to ArUcos
-  aruco_lines, lines = assignLines2ArUcos(ids, corners, labels_im)
+  aruco_lines, lines = assignLines2ArUcos(ids, corners, num_labels, labels_im)
 
   aux = np.zeros((len(ids),2))
   for i in range(0,len(ids)):
@@ -531,6 +544,10 @@ def interpretImageCaptured(image, fisheye: bool):
   #Vector: ID | ID_ARUCO | INPUTS/OUTPUTS(LINES)
   aruco_lines = np.concatenate((aux, aruco_lines), axis=1)
 
+  # Show
+  #cv.imshow("image", img)
+  #cv.waitKey(0) # waits until a key is pressed
+
   # Draw lines in image
   for i in range(0,len(lines)):
     if (-1 in lines[i]):
@@ -539,15 +556,7 @@ def interpretImageCaptured(image, fisheye: bool):
     end_point = (int(lines[i][2]), int(lines[i][3]))
     img = cv.line(img, start_point, end_point, (50, 100, 255), 4)
 
-
-  # Plot
-  #plotImage(img, 14)
-  # Print
-  #printArUcosINOUT(aruco_lines)  
-  #print()
-  #print(aruco_lines[:,1]) # SEND LOGIC
-  #print()
-  #print(output_Logic) # SEND LOGIC
+  img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 
   return 1, aruco_lines[:,1], output_Logic, img
 
@@ -560,18 +569,29 @@ def interpretImageCaptured(image, fisheye: bool):
 #######   START ROS MAIN  #######
 
 # Publishers (defined here to be global)
-pub_error = rospy.Publisher("/serp/errors", Int16, 10)
-pub_logic1 = rospy.Publisher("/serp/logic1", '????', 10)
-pub_logic2 = rospy.Publisher("/serp/logic2", '????', 10)
-pub_img = rospy.Publisher("/serp/analysed_img", Image, 10)
+pub_error = rospy.Publisher("/error_vision", Int8, queue_size=1)
+pub_logic1 = rospy.Publisher("/matrix", Matrix , queue_size=1)
+#pub_logic2 = rospy.Publisher("/serp/logic2", '????', 1)
+#pub_img = rospy.Publisher("/serp/analysed_img", Image, 1)
 
 def callBack(data):
     # Prints on terminal
-    rospy.loginfo('Image received...')
+    rospy.loginfo('Image received 1...')
     # Decodes received image
-    image = CvBridge.imgmsg_to_cv2(data)
+
+    try:
+      image = bridge.imgmsg_to_cv2(data, "passthrough")
+    except CvBridgeError as e:
+      print(e)
+
+    #if cv_image is None:
+    #  rospy.loginfo('Blank')
+
+    #cv.imshow('sample image', image)
+    #cv.waitKey(0) # waits until a key is pressed
+    
     # Analyses image
-    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=True)
+    ret, logic1, logic2, img = interpretImageCaptured(image, fisheye=False)
     # Check errors
     if (ret == -1):
         rospy.loginfo('ERROR: NOT ALL CORNERS DETECTED')
@@ -579,19 +599,31 @@ def callBack(data):
     elif (ret == -2):
         rospy.loginfo('ERROR: NO ArUcos DETECTED')
         pub_error.publish(-2)
+    elif (ret == -3):
+        rospy.loginfo('ERROR: WRONG ORIENTATION ArUcos DETECTED')
+        pub_error.publish(-3)
     # If no errors send matrix to logic
     else:
-        rospy.loginfo(logic1) # SEND LOGIC
-        pub_logic1.publish(logic1)
-        rospy.loginfo(logic2) # SEND LOGIC
-        pub_logic2.publish(logic2)
-        pub_img.publih(img)
+        rospy.loginfo('NOT ERROR! incrivel se entrar aqui!!')
+        cv.imshow("final_img", img)
+        cv.waitKey(2000) # waits until a key is pressed
+        cv.destroyAllWindows()
+        mat = Matrix()
+        mat.manual_mode = False
+        mat.matrix1 = logic1
+        mat.matrix2 = logic2.flatten()
+        #rospy.loginfo(logic1) # SEND LOGIC
+        pub_logic1.publish(mat)
+        
+        #pub_img.publih(img)
 
 def main():
     # Initialize the node
     rospy.init_node('vision_node', anonymous=True)
+
     # Subscriber
-    rospy.Subscriber("/serp/raw_image", Image, callBack)
+    rospy.Subscriber("/image", Image, callBack)
+
     # Publishers
         # Defined above
     # Keep awake

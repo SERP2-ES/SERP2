@@ -1,9 +1,8 @@
-#include "graphical_interface.h"
+﻿#include "graphical_interface.h"
 
 void gtk_dialog_destroy(GtkDialog *dialog, gint response_id, gpointer user_data);
 void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data);
 void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer data);
-cv::Mat frame;
 
 
 // Set the style provider for the widgets
@@ -31,6 +30,11 @@ std::string stampToString(const ros::Time& stamp, const std::string format="%H:%
 }
 
 void insert_text_to_log(GtkTextView* text_view, GtkTextBuffer* text_buffer, GtkTextIter* text_iter, const char* text, bool erro=false) {
+    //get bounds of buffer
+    //gtk_text_buffer_get_bounds(text_buffer, log_text_iter_start, log_text_iter_end);
+    //delete buffer text
+    //gtk_text_buffer_delete(text_buffer,log_text_iter_start, log_text_iter_end);
+    
     gtk_text_buffer_get_end_iter(text_buffer, text_iter);
     std::string str_text(text);
     std::string str_actual_time;
@@ -158,7 +162,7 @@ static void destroy_pixbuf(guchar *pixels, gpointer data)
     g_free(pixels);
 }
 
-void cb_camera_img(const sensor_msgs::ImageConstPtr &msg) {
+/*void cb_camera_img(const sensor_msgs::ImageConstPtr &msg) {
     if(g_mutex_trylock(&mutex_camera)) {
         // Convert ROS message to OpenCV Mat
         cv_bridge::CvImagePtr cv_ptr;
@@ -171,7 +175,7 @@ void cb_camera_img(const sensor_msgs::ImageConstPtr &msg) {
                                                      current_frame.cols, current_frame.rows, current_frame.step, 0, NULL);
         g_idle_add ((GSourceFunc) setImage, pixbuf_rgb);
     }
-}
+}*/
 
 /*void cb_camera_detections(const sensor_msgs::ImageConstPtr &msg) {
     if(g_mutex_trylock(&mutex_camera_detections)) {
@@ -221,13 +225,13 @@ void gtk_update_robot_state() {
     }
     // Update top label left margin
     //gtk_widget_set_margin_start(widget_robot_state, (actual_window_width-IMAGE_WIDTH)/2 + (IMAGE_WIDTH-(130+robot_state_num_chars*7.3))/2);
-    // Publish message to update state in the other nodes
-    std_msgs::String msg;
-    if(robot.state == Stopped) msg.data = "Stopped";
-    else if(robot.state == ManualControl) msg.data = "ManualControl";
-    else if(robot.state == ReadingProgrammingSheet) msg.data = "ReadingProgrammingSheet";
-    else if(robot.state == Executing) msg.data = "Executing";
-    pub_robot_state.publish(msg);
+    // Publish message to update state in the other nodes -> vamos precisar disto!
+    //std_msgs::String msg;
+    //if(robot.state == Stopped) msg.data = "Stopped";
+    //else if(robot.state == ManualControl) msg.data = "ManualControl";
+    //else if(robot.state == ReadingProgrammingSheet) msg.data = "ReadingProgrammingSheet";
+    //else if(robot.state == Executing) msg.data = "Executing";
+    //pub_robot_state.publish(msg);
 }
 
 void initializeGtkInterface() {
@@ -247,10 +251,7 @@ void gtk_dialog_destroy(GtkDialog *dialog, gint response_id, gpointer user_data)
         last_detected_sheet = current_detected_sheet.clone();
     }
     else if(response_id == GTK_RESPONSE_REJECT) {
-        std_srvs::Trigger srv;
-        if(!(client_read_programming_sheet.call(srv) && srv.response.success)) {
-            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de leitura da folha...", true);
-        }
+        insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de leitura da folha...", true);
     }
     else if(response_id == GTK_RESPONSE_DELETE_EVENT && dialog_destroy_is_first_time) {
         robot.state = Stopped;
@@ -314,18 +315,103 @@ void* cb_usb_livefeed(gpointer data)
     }
     while(ros::ok())
     {
+        //usleep(500000); 
         cap.read(frame);
+        if (frame.empty())
+            continue;
         // Update LiveFeed
-    
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        aux_frame1 = frame.clone();
+        cv::cvtColor(aux_frame1, aux_frame1, cv::COLOR_BGR2RGB);
         GdkPixbuf *pixbuf_rgb;
-        pixbuf_rgb = gdk_pixbuf_new_from_data(frame.data, GDK_COLORSPACE_RGB,FALSE, 8,
-                                                    frame.cols, frame.rows, frame.step, 0, NULL);
+        pixbuf_rgb = gdk_pixbuf_new_from_data(aux_frame1.data, GDK_COLORSPACE_RGB,FALSE, 8,
+                                                    aux_frame1.cols, aux_frame1.rows, aux_frame1.step, 0, NULL);
         g_idle_add ((GSourceFunc) setImage, pixbuf_rgb);
-
+        //aux_frame1.release(); 
     }
     cap.release();
     return NULL;
+}
+
+//podemos receber 3 tipos de erro
+// -1 -> falta de corners dos cantos
+// -2 -> detetou cantos mas a folha tá em branco -> não há código para analisar
+// -3 -> aRuco virado ao contrario
+void errorVisionCallback(const std_msgs::Int8 &msg)
+{
+    // analisar qual o tipo de erro que foi detetado
+        //mudo o estado
+        //escrevo o tipo de erro na box de terminal
+    switch(msg.data) 
+    {
+        case -1: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Error: Not all corners detected", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -2:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Não foi possível detetar aRuCos na folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -3:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        default:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: erro no PROCESSAMENTO da folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+    }
+}
+
+void errorLogicCallback(const std_msgs::Int8 &msg) // TO DO POR FAZER
+{
+    // analisar qual o tipo de erro que foi detetado
+        //mudo o estado
+        //escrevo o tipo de erro na box de terminal
+    switch(msg.data) 
+    {
+        case 0: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "SUCESSO: Folha de programação processada e compilada!", false);
+            robot.state = Executing;
+            gtk_update_robot_state();
+            break;
+        case -1: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar todos os aRucos de Fronteira, enquadre melhor a folha!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -2:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar aRuCos na folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -3:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -4:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        default:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: erro no COMPILAMENTO da folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+    }
 }
 
 int main(int argc, char *argv[])
@@ -370,6 +456,8 @@ int main(int argc, char *argv[])
 
     // Create text buffer iterator
     log_text_iter = new GtkTextIter();
+    log_text_iter_start = new GtkTextIter();
+    log_text_iter_end = new GtkTextIter();
     gtk_text_view_set_buffer(log_mensagens, log_buffer);
 
     // Apply the provided css in the window widget
@@ -388,22 +476,39 @@ int main(int argc, char *argv[])
     ros::NodeHandle n_public;
     // Give some time for the other nodes start
     ros::Duration(2.0).sleep();
-    // Create ROS Clients
+    // Create ROS Clients - averiguar se isto vale a pena
     client_velocity_setpoint = n_public.serviceClient<serp::VelocitySetPoint>("velocity_setpoint");
     client_battery_level = n_public.serviceClient<std_srvs::Trigger>("srv_battery_level");
-    client_read_programming_sheet = n_public.serviceClient<std_srvs::Trigger>("srv_read_programming_sheet");
+    
+    //esquecer este servico
+    //client_read_programming_sheet = n_public.serviceClient<std_srvs::Trigger>("srv_read_programming_sheet");
 
     // Create ROS Subscribers
     //it = new image_transport::ImageTransport(n_public);
     image_transport::ImageTransport it(n_public);
-    captured_frame = it.advertise("raw_frame", 1);
+    captured_frame = it.advertise("/image", 1);
+
+    //CRIAR SUBSCRICAO PARA MENSAGENS DE ERRO DO VISION_NODE
+    //TO DO: DEFINIR TOPICO E CALLBACK FUNCTION - EM CASO DE ERRO VAI PARA ESTADO PARADO
+    ros::Subscriber errorVision = n_public.subscribe("/error_vision", 1, errorVisionCallback);
+
+    //CRIAR SUBSCRICAO PARA MENSAGENS DE ERRO DO LOGIC_NODE
+    //TO DO: DEFINIR TOPICO E CALLBACK FUNCTION - EM CASO DE ERRO VAI PARA ESTADO PARADO; EM CASO DE SUCESSO VAI PARA ESTADO EXECUTING 
+    ros::Subscriber errorLogic = n_public.subscribe("/error_logic", 1, errorLogicCallback);
+    
+    //CRIAR SUBSCRICAO PARA MENSAGENS DE SENSORES
+    
     // Subscribe camera image
     //image_transport::Publisher captured_frame = it->advertise("raw_frame", 1);
     // Subscribe detected programming sheets
     //image_transport::Subscriber sub_detected_sheets = it->subscribe("camera/sheet_detections", 1, cb_camera_detections);
     
     // Create ROS Publisher
-    pub_robot_state = n_public.advertise<std_msgs::String>("robot_state", 2);
+    //pub_robot_state = n_public.advertise<std_msgs::String>("robot_state", 1);
+    
+    //CRIAR PUBLICACAO PARA MATRIZ DE VELOCIDADE
+    //TO DO: CRIAR VARIAVEL NO .H E DEFINIR TOPICO
+    vel_matrix = n_public.advertise<serp::Matrix>("/matrix", 1);
 
     gtk_update_robot_state();
 
@@ -412,10 +517,11 @@ int main(int argc, char *argv[])
     thread_timer = g_thread_new("Timer", cb_timer10s, NULL);
     thread_ros_sub = g_thread_new("Ros Spin", cb_ros_spin, NULL);
 
-    // NOVO CODIGO
+    // --------------------NOVO CODIGO-------------------------------------
     // criar thread para live feed da usb camera
-    GThread *thread_usb_camera;
-    thread_usb_camera = g_thread_new("USB Camera", cb_usb_livefeed, NULL);
+    //GThread *thread_usb_camera;
+    //thread_usb_camera = g_thread_new("USB Camera", cb_usb_livefeed, NULL);
+    // -------------------------------------------------------------------
 
     g_object_unref(css);
     g_object_unref(G_OBJECT(builder));
@@ -528,42 +634,53 @@ extern "C"
 
     void on_button_read_sheet_clicked(GtkButton *button) {
         if(robot.state == Stopped) {
-            std_srvs::Trigger srv;
-            if(client_read_programming_sheet.call(srv) && srv.response.success) {
+            //std_srvs::Trigger srv;
+            //if(client_read_programming_sheet.call(srv) && srv.response.success) {
                 
-                cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
-                GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data(frame.data, GDK_COLORSPACE_RGB, FALSE, 8,
-                                                                     frame.cols, frame.rows, frame.step, NULL, NULL);
-                dialog_image = gtk_image_new();
-                gtk_image_set_from_pixbuf(GTK_IMAGE(dialog_image), last_pixbuf_rgb);
-                g_object_unref(last_pixbuf_rgb);
-                g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
+                cv::VideoCapture cap("/dev/video1");
+                if(!cap.isOpened()) {
+                    ROS_ERROR("Can't open usb camera!");
+                }
+                
+                cap.read(frame);
+                if (!frame.empty())
+                {
+
+                    
+                    aux_frame2 = frame.clone();
+                    //cv::cvtColor(aux_frame2, aux_frame2, cv::COLOR_BGR2RGB);
+                    //GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data(aux_frame.data, GDK_COLORSPACE_RGB, FALSE, 8,
+                    //                                                    aux_frame.cols, aux_frame.rows, aux_frame.step, NULL, NULL);
+                    //dialog_image = gtk_image_new();
+                    //gtk_image_set_from_pixbuf(GTK_IMAGE(dialog_image), last_pixbuf_rgb);
+                    //g_object_unref(last_pixbuf_rgb);
+                    //g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
 
 
-                // Convert OpenCV image to ROS data
-                cv_bridge::CvImage img_bridge;
-                sensor_msgs::Image img_msg;
-                std_msgs::Header header;
-                header.stamp = ros::Time::now();
-                img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, frame);
-                img_bridge.toImageMsg(img_msg);
+                    // Convert OpenCV image to ROS data
+                    cv_bridge::CvImage img_bridge;
+                    sensor_msgs::Image img_msg;
+                    std_msgs::Header header;
+                    header.stamp = ros::Time::now();
+                    img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, aux_frame2);
+                    img_bridge.toImageMsg(img_msg);
 
-                captured_frame.publish(img_msg);
+                    captured_frame.publish(img_msg);
 
-
-
-                robot.state = ReadingProgrammingSheet;
-                gtk_update_robot_state();
-            }
-            else {
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de leitura da folha...", true);
-            }
+                    robot.state = ReadingProgrammingSheet;
+                    gtk_update_robot_state();
+                }
+                //aux_frame2.release();
+            //}
+            //else {
+            //    insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de leitura da folha...", true);
+            //}
         }
         else {
             insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Para ativar o modo de leitura da folha o robô tem que estar no modo \"Parado\"!...", true);
         }
     }
-
+    //esta função poderá desaparecer - por averiguar
     void on_button_see_last_detected_sheet_clicked(GtkButton *button) {
         if(g_mutex_trylock(&mutex_camera_detections)) {
             if(last_detected_sheet.empty()) {
@@ -584,5 +701,11 @@ extern "C"
     void on_button_global_stop_clicked(GtkButton *button) {
         robot.state = Stopped;
         gtk_update_robot_state();
+        // enviar matriz com velocidades a 0 !!!!!!
+        serp::Matrix msg;
+        msg.manual_mode = true;
+        msg.vel_motor_left = 0;
+        msg.vel_motor_right = 0;
+        vel_matrix.publish(msg);
     }
 }

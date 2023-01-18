@@ -7,7 +7,7 @@
 #include "opencv2/highgui.hpp"
 #include <raspicam/raspicam_cv.h>
 #include <iostream>
-#include "fisheye_camera_simulated_sensors_ros1/ObjectDetection.h"
+#include "serp/ObjectDetection.h"
 
 uint8_t levelDanger(float n);
 void sortDetectedObjects(std::string pos, cv::Mat img, std::vector<cv::Point2f> centers, std::vector<float> radius, std::vector<cv::Rect> rectangles);
