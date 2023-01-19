@@ -12,7 +12,9 @@
 #include <sensor_msgs/Image.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/UInt8.h>
 #include <serp/Matrix.h>
+#include <serp/ObjectDetection.h>
 
 // ROS custom services
 #include <serp/VelocitySetPoint.h>
@@ -29,8 +31,6 @@ GtkWidget *widget_robot_state;
 GtkTextView *log_mensagens;
 GtkTextBuffer *log_buffer;
 GtkTextIter *log_text_iter;
-GtkTextIter* log_text_iter_start;
-GtkTextIter* log_text_iter_end;
 GtkWidget *button_manual_go;
 GtkWidget *button_manual_stop;
 GtkWidget *button_global_stop;
@@ -40,6 +40,30 @@ GtkLabel  *label_battery;
 GtkLabel *label_robot_state;
 GtkImage *camera_image_frame;
 GtkWidget *dialog_image;
+GtkWidget *sensor_left_3;
+GtkWidget *sensor_left_2;
+GtkWidget *sensor_left_1;
+GtkWidget *sensor_left_0;
+GtkWidget *sensor_back_0;
+GtkWidget *sensor_back_3;
+GtkWidget *sensor_back_2;
+GtkWidget *sensor_back_1;
+GtkWidget *sensor_front_0;
+GtkWidget *sensor_front_3;
+GtkWidget *sensor_front_2;
+GtkWidget *sensor_front_1;
+GtkWidget *sensor_right_0;
+GtkWidget *sensor_right_3;
+GtkWidget *sensor_right_2;
+GtkWidget *sensor_right_1;
+GtkWidget *button;
+bool vision_flag;
+int vision_error;
+
+int left_sensor;
+int right_sensor;
+int front_sensor;
+int back_sensor;
 
 GMutex mutex_camera;
 GMutex mutex_camera_detections;
@@ -54,6 +78,8 @@ image_transport::ImageTransport *it;
 image_transport::Publisher captured_frame;
 ros::Publisher pub_robot_state;
 ros::Publisher vel_matrix;
+
+
 
 //dont need this
 //image_transport::Publisher captured_frame;
@@ -72,6 +98,8 @@ struct Robot {
     int8_t motor_right_requested_velocity;
     RobotState state;
     int8_t battery_level;
+    int error_vision;
+    int error_logic;
 } robot;
 
 cv::Mat frame;
@@ -89,3 +117,4 @@ int last_detected_image_last_height = 0;
 int dialog_last_width = 0;
 int dialog_last_height = 0;
 bool is_startup = true;
+

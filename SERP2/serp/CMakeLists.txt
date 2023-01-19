@@ -68,15 +68,15 @@ add_message_files(
   FILES
   RobotInfo.msg
   Velocity.msg
-  #Sensors.msg
   Matrix.msg
+  ObjectDetection.msg
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  VelocitySetPoint.srv
-)
+# add_service_files(
+#   FILES
+#   VelocitySetPoint.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -128,6 +128,10 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
+catkin_install_python(PROGRAMS src/vision_node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ###########
 ## Build ##
 ###########
@@ -157,9 +161,15 @@ add_definitions(${GTK_CFLAGS_OTHER})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+#add_executable(rpi_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} src/rpi_camera.cpp src/video_tests.cpp)
+#add_executable(graphical_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} src/graphical_interface.cpp)
+#add_executable(arduino_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} src/arduino_bridge_node.cpp src/logica.cpp)
+
 #add_executable(rpi_camera_node src/rpi_camera.cpp src/video_tests.cpp)
 add_executable(graphical_interface src/graphical_interface.cpp)
-add_executable(arduino_bridge_node src/arduino_bridge_node.cpp)
+add_executable(object_detection_node src/object_detection.cpp)
+add_executable(logic_node src/logic_node.cpp)
+#add_executable(arduino_bridge_node src/arduino_bridge_node.cpp src/logica.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -184,13 +194,25 @@ target_link_libraries(graphical_interface
   ${GTK_LIBRARIES}
 )
 
-target_link_libraries(arduino_bridge_node
+target_link_libraries(object_detection_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${raspicam_CV_LIBS}
+)
+
+target_link_libraries(logic_node
   ${catkin_LIBRARIES}
 )
 
-#add_dependencies(rpi_camera_node ${catkin_EXPORTED_TARGETS})
-add_dependencies(arduino_bridge_node ${catkin_EXPORTED_TARGETS})
-add_dependencies(graphical_interface ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(arduino_bridge_node
+#  ${catkin_LIBRARIES}
+#)
+
+#add_dependencies(rpi_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(arduino_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(graphical_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(object_detection_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(logic_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##

@@ -1,9 +1,8 @@
-#include "graphical_interface.h"
+﻿#include "graphical_interface.h"
 
 void gtk_dialog_destroy(GtkDialog *dialog, gint response_id, gpointer user_data);
 void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data);
 void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer data);
-
 
 
 // Set the style provider for the widgets
@@ -45,11 +44,8 @@ void insert_text_to_log(GtkTextView* text_view, GtkTextBuffer* text_buffer, GtkT
     if(!erro) color = "black";
     else color = "red";
     str_text_to_insert = "<span color=\"" + color + "\">> [" + str_actual_time + "] - " + str_text + "</span>\n";
-    //str_text_to_insert = str_text;
-    //gtk_text_buffer_set_text (text_buffer, str_text_to_insert.c_str(), str_text_to_insert.length());
     gtk_text_buffer_insert_markup(text_buffer, text_iter, str_text_to_insert.c_str(), -1);
-    //gtk_text_view_scroll_to_mark(text_view, gtk_text_buffer_get_insert(text_buffer), 0,true,1,1);
-    gtk_text_view_scroll_to_mark(text_view, gtk_text_buffer_create_mark(text_buffer, "FUNCIONA", text_iter, false), 0,true,1,1);
+    gtk_text_view_scroll_to_mark(text_view, gtk_text_buffer_get_insert(text_buffer), 0,true,1,1);
 }
 
 void enable_interface_button(GtkWidget *button, bool is_green=true) {
@@ -118,8 +114,6 @@ gboolean setImage(gpointer data) {
     g_object_unref(buf);
     return false;
 }
-
-
 
 gboolean showDialogLastDetectedSheet(gpointer data) {
     GtkWidget *dialog, *content_area;
@@ -243,8 +237,6 @@ void gtk_update_robot_state() {
 void initializeGtkInterface() {
     robot.state = Stopped;
     robot.battery_level = -1;
-    robot.error_logic = 1;
-    robot.error_vision = 0;
     gtk_label_set_label(label_battery, "---");
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_title(GTK_WINDOW(window), "SERP2");
@@ -315,57 +307,15 @@ void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer dat
     last_detected_image_last_height = height;
 }
 
-gboolean error_function(gpointer data) {
-    
-        if(robot.error_vision != 0){
-            
-            gtk_update_robot_state();
-            if(robot.error_vision == -1){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Not all corners detected", true);
-            }       
-            else if(robot.error_vision == -2){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Não foi possível detetar ArUcos na folha de programação!", true);
-            }
-            else if(robot.error_vision == -3){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Existe um ou mais ArUcos com a orientação na folha errada!", true);
-            }
-
-            robot.error_vision = 0;
-        }
-        if(robot.error_logic != 1){
-
-            if(robot.error_logic == 0){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "SUCESSO: Folha de programação processada e compilada!", false);
-            }       
-            else if(robot.error_logic == -1){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Combinações lógicas incorretas (p.ex Constante - condição IF)", true);
-            }
-            else if(robot.error_logic == -2){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Falta/excesso de ligações!", true);
-            }
-            else if(robot.error_logic == -3){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Ligações erradas (p.ex input - input)", true);
-            }
-            else if(robot.error_logic == -4){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Blocos inicias erradados (só podem ser constantes e sensores)", true);
-            }
-            gtk_update_robot_state();
-            robot.error_logic = 1;
-        }
-
-    return false;
-}
-
-void* usb_livefeed(gpointer data)
+void* cb_usb_livefeed(gpointer data)
 {
-    cv::VideoCapture cap("/dev/video0");
+    cv::VideoCapture cap("/dev/video1");
     if(!cap.isOpened()) {
         ROS_ERROR("Can't open usb camera!");
     }
-    //ros::Rate FPS(20);
     while(ros::ok())
     {
-        usleep(100000); 
+        //usleep(500000); 
         cap.read(frame);
         if (frame.empty())
             continue;
@@ -376,47 +326,11 @@ void* usb_livefeed(gpointer data)
         pixbuf_rgb = gdk_pixbuf_new_from_data(aux_frame1.data, GDK_COLORSPACE_RGB,FALSE, 8,
                                                     aux_frame1.cols, aux_frame1.rows, aux_frame1.step, 0, NULL);
         g_idle_add ((GSourceFunc) setImage, pixbuf_rgb);
-        
         //aux_frame1.release(); 
-        //FPS.sleep();
-
-        
-            //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar todos os ArUcos de Fronteira, enquadre melhor a folha!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -2:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar ArUcos na folha de programação!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -3:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais ArUcos com a orientação na folha errada!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -4:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais ArUcos com a orientação na folha errada!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     default:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: erro no COMPILAMENTO da folha de programação!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    // }
     }
     cap.release();
     return NULL;
 }
-
-
-
-
 
 //podemos receber 3 tipos de erro
 // -1 -> falta de corners dos cantos
@@ -427,164 +341,77 @@ void errorVisionCallback(const std_msgs::Int8 &msg)
     // analisar qual o tipo de erro que foi detetado
         //mudo o estado
         //escrevo o tipo de erro na box de terminal
-
-   
-    robot.state = Stopped;
-    robot.error_vision = msg.data;
-    g_idle_add ((GSourceFunc) error_function, NULL);
+    switch(msg.data) 
+    {
+        case -1: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Error: Not all corners detected", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -2:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Não foi possível detetar aRuCos na folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -3:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        default:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO VISÃO: erro no PROCESSAMENTO da folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+    }
 }
-
-
-
-
 
 void errorLogicCallback(const std_msgs::Int8 &msg) // TO DO POR FAZER
 {
     // analisar qual o tipo de erro que foi detetado
         //mudo o estado
         //escrevo o tipo de erro na box de terminal
-        robot.error_logic = msg.data;
-        if(msg.data == 0){
+    switch(msg.data) 
+    {
+        case 0: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "SUCESSO: Folha de programação processada e compilada!", false);
             robot.state = Executing;
-            g_idle_add ((GSourceFunc) error_function, NULL);
-        }
-        else{
+            gtk_update_robot_state();
+            break;
+        case -1: // falta corners dos cantos
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar todos os aRucos de Fronteira, enquadre melhor a folha!", true);
             robot.state = Stopped;
-            g_idle_add ((GSourceFunc) error_function, NULL);
-        }
-        
-}
-
-gboolean sensor_update(gpointer data) {
-
-    if(left_sensor==0){
-        gtk_widget_set_visible (sensor_left_3, 1);
-        gtk_widget_set_visible (sensor_left_2,0);
-        gtk_widget_set_visible (sensor_left_1, 0);
-        gtk_widget_set_visible (sensor_left_0,0);
-
+            gtk_update_robot_state();
+            break;
+        case -2:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar aRuCos na folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -3:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        case -4:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais aRucos com a orientação na folha errada!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
+            break;
+        default:
+        // code block
+            insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: erro no COMPILAMENTO da folha de programação!", true);
+            robot.state = Stopped;
+            gtk_update_robot_state();
     }
-    else if( (left_sensor>0) && (left_sensor<=30) ){
-        gtk_widget_set_visible (sensor_left_3, 0);
-        gtk_widget_set_visible (sensor_left_2,1);
-        gtk_widget_set_visible (sensor_left_1, 0);
-        gtk_widget_set_visible (sensor_left_0,0);
-
-    }
-    else if((left_sensor>30) && (left_sensor<95)){
-
-        gtk_widget_set_visible (sensor_left_3, 0);
-        gtk_widget_set_visible (sensor_left_2,0);
-        gtk_widget_set_visible (sensor_left_1, 1);
-        gtk_widget_set_visible (sensor_left_0,0);
-    }
-    else{
-        gtk_widget_set_visible (sensor_left_3, 0);
-        gtk_widget_set_visible (sensor_left_2,0);
-        gtk_widget_set_visible (sensor_left_1, 0);
-        gtk_widget_set_visible (sensor_left_0,1);
-    }
-
-
-    if(right_sensor==0){
-        gtk_widget_set_visible (sensor_right_3, 1);
-        gtk_widget_set_visible (sensor_right_2,0);
-        gtk_widget_set_visible (sensor_right_1, 0);
-        gtk_widget_set_visible (sensor_right_0,0);
-
-    }
-    else if( (right_sensor>0) && (right_sensor<=30) ){
-        gtk_widget_set_visible (sensor_right_3, 0);
-        gtk_widget_set_visible (sensor_right_2,1);
-        gtk_widget_set_visible (sensor_right_1, 0);
-        gtk_widget_set_visible (sensor_right_0,0);
-
-    }
-    else if((right_sensor>30) && (right_sensor<95)){
-
-        gtk_widget_set_visible (sensor_right_3, 0);
-        gtk_widget_set_visible (sensor_right_2,0);
-        gtk_widget_set_visible (sensor_right_1, 1);
-        gtk_widget_set_visible (sensor_right_0,0);
-    }
-    else{
-        gtk_widget_set_visible (sensor_right_3, 0);
-        gtk_widget_set_visible (sensor_right_2,0);
-        gtk_widget_set_visible (sensor_right_1, 0);
-        gtk_widget_set_visible (sensor_right_0,1);
-    }
-
-
-    if(back_sensor==0){
-        gtk_widget_set_visible (sensor_back_3, 1);
-        gtk_widget_set_visible (sensor_back_2,0);
-        gtk_widget_set_visible (sensor_back_1, 0);
-        gtk_widget_set_visible (sensor_back_0,0);
-
-    }
-    else if( (back_sensor>0) && (back_sensor<=30) ){
-        gtk_widget_set_visible (sensor_back_3, 0);
-        gtk_widget_set_visible (sensor_back_2,1);
-        gtk_widget_set_visible (sensor_back_1, 0);
-        gtk_widget_set_visible (sensor_back_0,0);
-
-    }
-    else if((back_sensor>30) && (back_sensor<95)){
-
-        gtk_widget_set_visible (sensor_back_3, 0);
-        gtk_widget_set_visible (sensor_back_2,0);
-        gtk_widget_set_visible (sensor_back_1, 1);
-        gtk_widget_set_visible (sensor_back_0,0);
-    }
-    else{
-        gtk_widget_set_visible (sensor_back_3, 0);
-        gtk_widget_set_visible (sensor_back_2,0);
-        gtk_widget_set_visible (sensor_back_1, 0);
-        gtk_widget_set_visible (sensor_back_0,1);
-    }
-
-
-    if(front_sensor==0){
-        gtk_widget_set_visible (sensor_front_3, 1);
-        gtk_widget_set_visible (sensor_front_2,0);
-        gtk_widget_set_visible (sensor_front_1, 0);
-        gtk_widget_set_visible (sensor_front_0,0);
-
-    }
-    else if( (front_sensor>0) && (front_sensor<=30) ){
-        gtk_widget_set_visible (sensor_front_3, 0);
-        gtk_widget_set_visible (sensor_front_2,1);
-        gtk_widget_set_visible (sensor_front_1, 0);
-        gtk_widget_set_visible (sensor_front_0,0);
-
-    }
-    else if((front_sensor>30) && (front_sensor<95)){
-
-        gtk_widget_set_visible (sensor_front_3, 0);
-        gtk_widget_set_visible (sensor_front_2,0);
-        gtk_widget_set_visible (sensor_front_1, 1);
-        gtk_widget_set_visible (sensor_front_0,0);
-    }
-    else{
-        gtk_widget_set_visible (sensor_front_3, 0);
-        gtk_widget_set_visible (sensor_front_2,0);
-        gtk_widget_set_visible (sensor_front_1, 0);
-        gtk_widget_set_visible (sensor_front_0,1);
-    }
-       
-
-    return false;
-}
-
-
-void sensorCallback(const serp::ObjectDetection::ConstPtr &msg)
-{
-    left_sensor=msg->left;
-    right_sensor=msg->right;
-    back_sensor=msg->back;
-    front_sensor=msg->front;
-    g_idle_add ((GSourceFunc) sensor_update, NULL);
-
 }
 
 int main(int argc, char *argv[])
@@ -593,10 +420,6 @@ int main(int argc, char *argv[])
     GtkLabel *label_motor_esquerda;
     GtkLabel *label_motor_direita;
     GtkCssProvider *css = gtk_css_provider_new();
-
-    //button = gtk_button_new ();
-
-    //g_signal_connect (G_OBJECT (button), "clicked",G_CALLBACK (callback), (gpointer) "cool button");
 
     // Get path of the base project using a environment variable
     char css_file_path[200];
@@ -631,30 +454,10 @@ int main(int argc, char *argv[])
     label_robot_state = GTK_LABEL(gtk_builder_get_object(builder, "robot_state"));
     camera_image_frame = GTK_IMAGE(gtk_builder_get_object(builder, "camera_frame"));
 
-    sensor_left_0 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_left_0"));
-    sensor_left_1 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_left_1"));
-    sensor_left_2 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_left_2"));
-    sensor_left_3 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_left_3"));
-
-    sensor_back_0 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_back_0"));
-    sensor_back_1 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_back_1"));
-    sensor_back_2 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_back_2"));
-    sensor_back_3 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_back_3"));
-
-    sensor_front_0 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_front_0"));
-    sensor_front_1 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_front_1"));
-    sensor_front_2 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_front_2"));
-    sensor_front_3 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_front_3"));
-
-    sensor_right_0 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_right_0"));
-    sensor_right_1 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_right_1"));
-    sensor_right_2 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_right_2"));
-    sensor_right_3 = GTK_WIDGET(gtk_builder_get_object(builder, "sensor_right_3"));
-
     // Create text buffer iterator
     log_text_iter = new GtkTextIter();
-    //log_text_iter_start = new GtkTextIter();
-    //log_text_iter_end = new GtkTextIter();
+    log_text_iter_start = new GtkTextIter();
+    log_text_iter_end = new GtkTextIter();
     gtk_text_view_set_buffer(log_mensagens, log_buffer);
 
     // Apply the provided css in the window widget
@@ -674,7 +477,7 @@ int main(int argc, char *argv[])
     // Give some time for the other nodes start
     ros::Duration(2.0).sleep();
     // Create ROS Clients - averiguar se isto vale a pena
-    //client_velocity_setpoint = n_public.serviceClient<serp::VelocitySetPoint>("velocity_setpoint");
+    client_velocity_setpoint = n_public.serviceClient<serp::VelocitySetPoint>("velocity_setpoint");
     client_battery_level = n_public.serviceClient<std_srvs::Trigger>("srv_battery_level");
     
     //esquecer este servico
@@ -694,8 +497,6 @@ int main(int argc, char *argv[])
     ros::Subscriber errorLogic = n_public.subscribe("/error_logic", 1, errorLogicCallback);
     
     //CRIAR SUBSCRICAO PARA MENSAGENS DE SENSORES
-    //TO DO: DEFINIR TOPICO E CALLBACK FUNCTION - MUDAR IMAGEM DO SENSOR
-    ros::Subscriber sensors = n_public.subscribe("/sensors", 1, sensorCallback);
     
     // Subscribe camera image
     //image_transport::Publisher captured_frame = it->advertise("raw_frame", 1);
@@ -716,13 +517,10 @@ int main(int argc, char *argv[])
     thread_timer = g_thread_new("Timer", cb_timer10s, NULL);
     thread_ros_sub = g_thread_new("Ros Spin", cb_ros_spin, NULL);
 
-    vision_flag=false;
-    vision_error=0;
-
     // --------------------NOVO CODIGO-------------------------------------
     // criar thread para live feed da usb camera
-    GThread *thread_usb_camera;
-    thread_usb_camera = g_thread_new("USB Camera", usb_livefeed, NULL);
+    //GThread *thread_usb_camera;
+    //thread_usb_camera = g_thread_new("USB Camera", cb_usb_livefeed, NULL);
     // -------------------------------------------------------------------
 
     g_object_unref(css);
@@ -738,20 +536,11 @@ extern "C"
     void on_button_go_manual_control_clicked(GtkButton *clicked_button) {
         if(robot.state == Stopped) {
             // Send service request
-            // serp::VelocitySetPoint srv;
-            // srv.request.state = true;
-            // srv.request.vel_motor_left = robot.motor_left_requested_velocity;
-            // srv.request.vel_motor_right = robot.motor_right_requested_velocity;
-            serp::Matrix man_control;
-            man_control.manual_mode = true;
-            man_control.vel_motor_left = robot.motor_left_requested_velocity;
-            man_control.vel_motor_right = robot.motor_right_requested_velocity;
-
-            vel_matrix.publish(man_control);
-            
-            robot.state = ManualControl;
-            gtk_update_robot_state();
-            /*if(client_velocity_setpoint.call(srv) && srv.response.success) {
+            serp::VelocitySetPoint srv;
+            srv.request.state = true;
+            srv.request.vel_motor_left = robot.motor_left_requested_velocity;
+            srv.request.vel_motor_right = robot.motor_right_requested_velocity;
+            if(client_velocity_setpoint.call(srv) && srv.response.success) {
                 // Change buttons color
                 enable_interface_button(button_manual_go, true);
                 disable_interface_button(button_manual_stop, false);
@@ -760,7 +549,7 @@ extern "C"
             }
             else {
                 insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de controlo manual...", true);
-            }*/
+            }
         }
         else {
             insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Para ativar o modo de controlo manual o robô tem que estar parado!", true);
@@ -769,33 +558,24 @@ extern "C"
 
     void on_button_stop_manual_control_clicked(GtkButton *clicked_button) {
         if(robot.state == ManualControl) {
-            serp::Matrix man_control;
-            man_control.manual_mode = true;
-            man_control.vel_motor_left = 0;
-            man_control.vel_motor_right = 0;
-
-            vel_matrix.publish(man_control);
-            
-            robot.state = Stopped;
-            gtk_update_robot_state();
             // Send service request
-            // serp::VelocitySetPoint srv;
-            // srv.request.state = false;
-            // srv.request.vel_motor_left = robot.motor_left_velocity;
-            // srv.request.vel_motor_right = robot.motor_right_velocity;
-            // if(client_velocity_setpoint.call(srv) && srv.response.success) {
-            //     // Change button color to appear disabled
-            //     disable_interface_button(button_manual_go, true);
-            //     enable_interface_button(button_manual_stop, false);
-            //     robot.state = Stopped;
-            //     gtk_update_robot_state();
-            //     // Reset Ranges
-            //     gtk_range_set_value(range_motor_left, 0);
-            //     gtk_range_set_value(range_motor_right, 0);
-            // }
-            // else {
-            //     insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível desativar o modo de controlo manual...", true);
-            // }
+            serp::VelocitySetPoint srv;
+            srv.request.state = false;
+            srv.request.vel_motor_left = robot.motor_left_velocity;
+            srv.request.vel_motor_right = robot.motor_right_velocity;
+            if(client_velocity_setpoint.call(srv) && srv.response.success) {
+                // Change button color to appear disabled
+                disable_interface_button(button_manual_go, true);
+                enable_interface_button(button_manual_stop, false);
+                robot.state = Stopped;
+                gtk_update_robot_state();
+                // Reset Ranges
+                gtk_range_set_value(range_motor_left, 0);
+                gtk_range_set_value(range_motor_right, 0);
+            }
+            else {
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível desativar o modo de controlo manual...", true);
+            }
         }
         else {
             insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: O robô não se encontra no modo de controlo manual...", true);
@@ -806,60 +586,46 @@ extern "C"
         gdouble value;
         value = gtk_range_get_value(range);
         if (robot.state == ManualControl) {
-            serp::Matrix man_control;
-            man_control.manual_mode = true;
-            man_control.vel_motor_left = (int8_t)value;
-            man_control.vel_motor_right = robot.motor_right_requested_velocity;
-
-            vel_matrix.publish(man_control);
             // Send service request
-            // serp::VelocitySetPoint srv;
-            // srv.request.state = true; // activate setpoint mode
-            // srv.request.vel_motor_left = (int8_t) value;
-            // srv.request.vel_motor_right = robot.motor_right_requested_velocity; // Only update motor left velocity
-            // if (!(client_velocity_setpoint.call(srv) && srv.response.success)) {
-            //     insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível atualizar manualmente a velocidade do robô.", true);
-            //     insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Controlo manual desativado, por segurança!", true);
-            //     robot.state = Stopped;
-            //     enable_interface_button(button_manual_stop, false);
-            //     disable_interface_button(button_manual_go, true);
-            // }
-            // else {
-            //     robot.motor_left_requested_velocity = srv.request.vel_motor_left;
-            // }
+            serp::VelocitySetPoint srv;
+            srv.request.state = true; // activate setpoint mode
+            srv.request.vel_motor_left = (int8_t) value;
+            srv.request.vel_motor_right = robot.motor_right_requested_velocity; // Only update motor left velocity
+            if (!(client_velocity_setpoint.call(srv) && srv.response.success)) {
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível atualizar manualmente a velocidade do robô.", true);
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Controlo manual desativado, por segurança!", true);
+                robot.state = Stopped;
+                enable_interface_button(button_manual_stop, false);
+                disable_interface_button(button_manual_go, true);
+            }
+            else {
+                robot.motor_left_requested_velocity = srv.request.vel_motor_left;
+            }
         }
         else {
             robot.motor_left_requested_velocity = (int8_t) value;
         }
     }
 
-
-
     void on_range_right_motor_changed(GtkRange *range) {
         gdouble value;
         value = gtk_range_get_value(range);
         if (robot.state == ManualControl) {
-            serp::Matrix man_control;
-            man_control.manual_mode = true;
-            man_control.vel_motor_left = robot.motor_left_requested_velocity;
-            man_control.vel_motor_right = (int8_t)value;
-
-            vel_matrix.publish(man_control);
             // Send service request
-            // serp::VelocitySetPoint srv;
-            // srv.request.state = true; // activate setpoint mode
-            // srv.request.vel_motor_left = robot.motor_left_requested_velocity; // Only update motor right velocity
-            // srv.request.vel_motor_right = (int8_t) value;
-            // if (!(client_velocity_setpoint.call(srv) && srv.response.success)) {
-            //     insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível atualizar manualmente a velocidade do robô.", true);
-            //     insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Controlo manual desativado, por segurança!", true);
-            //     robot.state = Stopped;
-            //     enable_interface_button(button_manual_stop, false);
-            //     disable_interface_button(button_manual_go, true);
-            // }
-            // else {
-            //     robot.motor_right_requested_velocity = srv.request.vel_motor_right;
-            // }
+            serp::VelocitySetPoint srv;
+            srv.request.state = true; // activate setpoint mode
+            srv.request.vel_motor_left = robot.motor_left_requested_velocity; // Only update motor right velocity
+            srv.request.vel_motor_right = (int8_t) value;
+            if (!(client_velocity_setpoint.call(srv) && srv.response.success)) {
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível atualizar manualmente a velocidade do robô.", true);
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Controlo manual desativado, por segurança!", true);
+                robot.state = Stopped;
+                enable_interface_button(button_manual_stop, false);
+                disable_interface_button(button_manual_go, true);
+            }
+            else {
+                robot.motor_right_requested_velocity = srv.request.vel_motor_right;
+            }
         }
         else {
             robot.motor_right_requested_velocity = (int8_t) value;
@@ -871,15 +637,14 @@ extern "C"
             //std_srvs::Trigger srv;
             //if(client_read_programming_sheet.call(srv) && srv.response.success) {
                 
-                //cv::VideoCapture cap("/dev/video1");
-                //cap.open(0);
-                //if(!cap.isOpened()) {
-                //    ROS_ERROR("Can't open usb camera!");
-//}
+                cv::VideoCapture cap("/dev/video1");
+                if(!cap.isOpened()) {
+                    ROS_ERROR("Can't open usb camera!");
+                }
                 
-                //cap.read(frame);
-                //if (!frame.empty())
-                //{
+                cap.read(frame);
+                if (!frame.empty())
+                {
 
                     
                     aux_frame2 = frame.clone();
@@ -904,7 +669,7 @@ extern "C"
 
                     robot.state = ReadingProgrammingSheet;
                     gtk_update_robot_state();
-                //}
+                }
                 //aux_frame2.release();
             //}
             //else {
@@ -917,7 +682,7 @@ extern "C"
     }
     //esta função poderá desaparecer - por averiguar
     void on_button_see_last_detected_sheet_clicked(GtkButton *button) {
-        /*if(g_mutex_trylock(&mutex_camera_detections)) {
+        if(g_mutex_trylock(&mutex_camera_detections)) {
             if(last_detected_sheet.empty()) {
                 insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Ainda não foi detetada qualquer folha de programação...", true);
             }
@@ -930,11 +695,7 @@ extern "C"
                 g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
             }
             g_mutex_unlock(&mutex_camera_detections);
-        }*/
-        gtk_widget_set_visible (sensor_back_3, 1);
-        gtk_widget_set_visible (sensor_back_2,0);
-        gtk_widget_set_visible (sensor_back_1, 0);
-        gtk_widget_set_visible (sensor_back_0,0);
+        }
     }
 
     void on_button_global_stop_clicked(GtkButton *button) {
@@ -947,10 +708,4 @@ extern "C"
         msg.vel_motor_right = 0;
         vel_matrix.publish(msg);
     }
-
-    void callback (GtkWidget *widget, gpointer *data)
-    {
-        insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "TEste", true);
-    }
-
 }

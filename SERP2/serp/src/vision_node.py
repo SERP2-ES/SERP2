@@ -16,7 +16,7 @@ import numpy as np
 
 ##### START DEFINIG FUNCTIONS #####
 
-# Undistortion
+# Undistortion || NOT USED
 def undistort(img):
     # Undistortion Parameters - that came from the calibration function 
     DIM = (1920, 1080)
@@ -606,7 +606,7 @@ def callBack(data):
     else:
         rospy.loginfo('NOT ERROR! incrivel se entrar aqui!!')
         cv.imshow("final_img", img)
-        cv.waitKey(2000) # waits until a key is pressed
+        cv.waitKey(5000) # waits until a key is pressed
         cv.destroyAllWindows()
         mat = Matrix()
         mat.manual_mode = False
