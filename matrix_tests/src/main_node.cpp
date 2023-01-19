@@ -32,7 +32,27 @@ int main(int argc, char **argv)
 
   sensor_msgs::ImagePtr msg;
   msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
-  ros::Duration(10).sleep();
+  std::cout << "10..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "9..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "8..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "7..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "6..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "5..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "4..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "3..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "2..." << std::endl;
+  ros::Duration(1).sleep();
+  std::cout << "1..." << std::endl;
+  ros::Duration(1).sleep();
+  
   msg->header.stamp = ros::Time::now();
 
   img_pub.publish(msg);

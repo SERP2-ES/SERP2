@@ -359,8 +359,8 @@ int check_EdgesQuantity(std::vector <graphEdge> edges, std::vector <blocks> bloc
     // verificar se todos os i/o tem conexoes, erros por defeito ou excesso
     for (int i = 0; i < blocks.size(); i++)
     {
-        int n_i1, n_i2, n_cond;
-        n_i1 = n_i2 = n_cond = 0;
+        int n_i1, n_i2, n_cond, out_1, out_2;
+        n_i1 = n_i2 = n_cond = out_1 = out_2 = 0;
     
         for (int j = 0; j < edges.size(); j++)
         {
@@ -373,6 +373,19 @@ int check_EdgesQuantity(std::vector <graphEdge> edges, std::vector <blocks> bloc
                 else
                     n_cond++;
             }
+            if (edges[j].start_ver == blocks[i].id) //verificar outputs
+            {
+                if (edges[j].output_id == 1)
+                    out_1++;
+                else if (edges[j].output_id == 2)
+                    out_2++;
+            }
+        }
+
+        // blocks without any edge linked
+        if ((n_i1 + n_i2 + n_cond + out_1 + out_2) <= 0)
+        {
+            return -2;
         }
 
         // 0i - 1o: sensores
@@ -628,11 +641,6 @@ void matrix_ToEdges(std::vector< std::vector<int>> matrix)
         graphEdge gE = { start, end, out, inp };
         edges.push_back(gE);
     }
-
-    // std::cout << "EDGES" << std::endl;
-    // for(int i = 0; i < edges.size(); i++ ){
-    //     std::cout << edges.at(i).start_ver << <<  << std::endl;
-    // }
 } 
 
 void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos os blocos
@@ -830,20 +838,11 @@ void subs_Extend()
                                 after_ext_2 = edges[l].end_ver;    
                                 after_ext_2_inp = edges[l].input_id;
                             }
-                            
-                            
-                            std::cout << "Bloco ID: " << blocks_list[i].id << std::endl;
-
-                            std::cout << "EDGES" << std::endl;
-                            for(int x = 0; x < edges.size(); x++ ){
-                                std::cout << edges.at(x).start_ver << " "<< edges.at(x).end_ver << std::endl;
-                            }
                         }
                     }
                 }
             }
             
-
             //remove 3 edges around extensor
             for (int m=0;m<edges.size();m++)
             {
@@ -853,9 +852,6 @@ void subs_Extend()
                     m = -1;
                 }
             }
-
-            std::cout << before_ext << " " << after_ext_1 << std::endl;
-            std::cout << before_ext << " " << after_ext_2 << std::endl;
 
             //add 2 edges 
             graphEdge edge1 = {before_ext, after_ext_1, before_ext_out, after_ext_1_inp};
@@ -901,41 +897,32 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
         }
 
         //print matrix
-        std::cout << "Matrix 1" << std::endl;
-        for(int i = 0; i < matrix1.size(); i++ ){
-            std::cout << matrix1.at(i) << " ";
-        }
-        std::cout << std::endl;
-
-        std::cout << "Matrix 2" << std::endl;
-        for (int i = 0; i < matrix2.size(); i++)
-        {
-            for (int j = 0; j < matrix2[i].size(); j++)
-            {
-                std::cout << matrix2[i][j] << " ";
-            }
-            std::cout << std::endl;
-        }
+        //std::cout << "Matrix 1" << std::endl;
+        //for(int i = 0; i < matrix1.size(); i++ ){
+        //    std::cout << matrix1.at(i) << " ";
+        //}
+        //std::cout << std::endl;
+        
+        //std::cout << "Matrix 2" << std::endl;
+        //for (int i = 0; i < matrix2.size(); i++)
+        //{
+        //    for (int j = 0; j < matrix2[i].size(); j++)
+        //    {
+        //        std::cout << matrix2[i][j] << " ";
+        //    }
+        //    std::cout << std::endl;
+        //}
 
         construct_Blocks(matrix1, num_block);
         matrix_ToEdges(matrix2);
+        
         subs_Extend();
         give_InitToken();
-
-        std::cout << "EDGES" << std::endl;
-        for(int i = 0; i < edges.size(); i++ ){
-            std::cout << edges.at(i).start_ver << " "<< edges.at(i).end_ver << std::endl;
-        }
 
         error[0] = check_EdgesLogic();
         error[1] = check_EdgesQuantity(edges, blocks_list);
         error[2] = check_EdgesStupid(matrix2, num_rows);
         error[3] = check_InitialBlocks(tokens, blocks_list);
-
-        for(int i=0; i < 4; i++){
-            std::cout << error[i] << std::endl; 
-        }
-
 
         for(int i=0; i < 4; i++){
             if(error[i] < 0){
@@ -963,9 +950,7 @@ int main(int argc, char **argv)
   pub_vel = node.advertise<serp::Velocity>("/vel", 1);
   out_vel[0] = 0;
   out_vel[1] = 0;
-
-  int it = 0;
-
+  
   serp::Velocity vel;
   pub_errors = node.advertise<std_msgs::Int8>("/error_logic", 1);
 
@@ -984,20 +969,6 @@ int main(int argc, char **argv)
             tokens.clear();
             copy(init.begin(), init.end(), back_inserter(tokens));
         }
-
-
-        // std::cout << "TOKENS" << std::endl;
-        // for(int i = 0; i < tokens.size(); i++ ){
-        //     std::cout << tokens.at(i) << std::endl;
-        // }
-
-        // for(int i = 0; i < blocks_list.size(); i++){
-        //     std::cout << "Block id: "<< blocks_list.at(i).id << " - " <<blocks_list.at(i).out_f << std::endl;
-        // }
-
-        // if(it == 10){
-        //     break;
-        // }
     }
     
     vel.vel_motor_left = out_vel[0];
