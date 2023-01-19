@@ -794,22 +794,43 @@ void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos
 void subs_Extend()
 {
     bool rem_blocks = false;
-    int count = 0;
 
     for (int i = 0; i < num_block; i++) // search block extend
     {   
+        int before_ext = -1;
+        int before_ext_out = -1;
+        int ext_id = -1;
+        int after_ext_1 = -1;
+        int after_ext_2 = -1;
+        int after_ext_1_inp = -1;
+        int after_ext_2_inp = -1;
+    
         if (blocks_list[i].name == "duplicate")
         {   
+            ext_id = blocks_list[i].id;
+
             for (int k = 0; k < num_rows; k++) // search edges
             {   
                 if (edges[k].end_ver == blocks_list[i].id)
                 {   
+                    before_ext = edges[k].start_ver;
+                    before_ext_out = edges[k].output_id;
+
                     for (int l = 0; l < num_rows; l++)
                     {   
                         if (edges[l].start_ver == blocks_list[i].id)
                         {   
-                            graphEdge edge;
-                            edge = { edges[k].start_ver, edges[l].end_ver, edges[k].output_id, edges[l].input_id };
+                            if (after_ext_1 == -1)
+                            {
+                                after_ext_1 = edges[l].end_ver;
+                                after_ext_1_inp = edges[l].input_id;
+                            }    
+                            else 
+                            {
+                                after_ext_2 = edges[l].end_ver;    
+                                after_ext_2_inp = edges[l].input_id;
+                            }
+                            
                             
                             std::cout << "Bloco ID: " << blocks_list[i].id << std::endl;
 
@@ -817,56 +838,35 @@ void subs_Extend()
                             for(int x = 0; x < edges.size(); x++ ){
                                 std::cout << edges.at(x).start_ver << " "<< edges.at(x).end_ver << std::endl;
                             }
-
-                            std::cout << "Nova Edge: " << edge.start_ver << " " << edge.end_ver << std::endl;
-                            std::cout << "K: " << k << " " << "L: " << l << std::endl;
-                            
-                            
-                            // remove and add 1st edge
-                            if (count == 0)
-                            {
-                                edges.erase(edges.begin() + l);
-                                edges.push_back(edge);
-                                count++;
-                            }
-                            else // remove 2 edges and add 2nd edge
-                            {
-                                edges.erase(edges.begin() + k);
-
-                                if (l < k)
-                                {
-                                    edges.erase(edges.begin() + l);
-                                }
-                                else
-                                {
-                                    edges.erase(edges.begin() + l - 1);
-                                }
-                                edges.push_back(edge);
-                                count = 0;
-                                rem_blocks = true;
-                                num_rows--;
-                            }
                         }
                     }
                 }
+            }
+            
 
-                if (count == 1)
+            //remove 3 edges around extensor
+            for (int m=0;m<edges.size();m++)
+            {
+                if ((edges[m].start_ver == ext_id) || (edges[m].end_ver == ext_id))
                 {
-                    k = 0;
+                    edges.erase(edges.begin() + m);
+                    m = -1;
                 }
             }
 
-            
+            std::cout << before_ext << " " << after_ext_1 << std::endl;
+            std::cout << before_ext << " " << after_ext_2 << std::endl;
 
+            //add 2 edges 
+            graphEdge edge1 = {before_ext, after_ext_1, before_ext_out, after_ext_1_inp};
+            graphEdge edge2 = {before_ext, after_ext_2, before_ext_out, after_ext_2_inp};
+            edges.push_back(edge1);
+            edges.push_back(edge2);
+            num_rows--;
+            
             //remove block
-            if (rem_blocks)
-            {
-                blocks_list.erase(blocks_list.begin() + i);
-                num_block--;
-                rem_blocks = false;
-            }
-
-            
+            blocks_list.erase(blocks_list.begin() + i);
+            num_block--;
         }
     }
 }
