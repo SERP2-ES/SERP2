@@ -358,7 +358,7 @@ gboolean error_function(gpointer data) {
 
 void* usb_livefeed(gpointer data)
 {
-    cv::VideoCapture cap("/dev/video0");
+    cv::VideoCapture cap("/dev/video1");
     if(!cap.isOpened()) {
         ROS_ERROR("Can't open usb camera!");
     }

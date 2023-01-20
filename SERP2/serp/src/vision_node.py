@@ -466,8 +466,8 @@ def interpretImageCaptured(image, fisheye):
     return -1, None, None, None
 
   # Perspective Correction
-  width = 577  #1154
-  height = 408  #816
+  width = 692  #1154
+  height = 500  #816
   img = correctPerspective(img, ids, corners, width, height) 
 
   # Remove Corner ArUcos

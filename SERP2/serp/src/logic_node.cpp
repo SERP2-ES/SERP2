@@ -36,8 +36,9 @@ void update_BlocksOutputs()
                 if (blocks_list[i].type == "constant")
                 {
                     blocks_list[i].out_f = float(blocks_list[i].class_id) - (float) 14; // 14 is the class_id of zero
+                    blocks_list[i].constant = "";
                     blocks_list[i].constant.push_back(int(blocks_list[i].out_f) + 48); // ASCII
-                }
+                }                                             
                 else if (blocks_list[i].type == "sensor")
                 {
                     blocks_list[i].out_f = sensors[blocks_list[i].class_id - 9]; // 9 is the class_id of s_left
@@ -118,7 +119,10 @@ void update_BlocksOutputs()
                     if (bc)
                     {
                         blocks_list[i].out_f = f1;
-                        blocks_list[i].out_b = b1;
+                    }
+                    else 
+                    {
+                        blocks_list[i].out_f = 0;
                     }
                 }
                 else if (blocks_list[i].name == "else_if")
@@ -566,11 +570,6 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
                     return -1;
                 }
             }
-            else if (end_type == "comparator")
-            {
-                return -1;
-            }
-            
         }
 
         if ((start_type == "sensor") || (start_type == "constant"))
@@ -922,10 +921,10 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
         subs_Extend();
         give_InitToken();
 
-        error[0] = check_EdgesLogic();
-        error[1] = check_EdgesQuantity(edges, blocks_list);
-        error[2] = check_EdgesStupid(matrix2, num_rows);
-        error[3] = check_InitialBlocks(tokens, blocks_list);
+        error[0] = check_InitialBlocks(tokens, blocks_list);
+        error[1] = check_EdgesStupid(matrix2, num_rows);
+        error[2] = check_EdgesQuantity(edges, blocks_list);
+        error[3] = check_EdgesLogic();
 
         std_msgs::Int8 e;
         for(int i=0; i < 4; i++){
