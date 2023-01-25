@@ -1,5 +1,0 @@
-bool state
-int8 vel_motor_left
-int8 vel_motor_right
----
-bool success

@@ -240,7 +240,7 @@ def logicOutput(arucos, connections_matrix): # connections - first aruco_line,
             elif j == 1: # ArUco Bot Input - End of line
               output_Logic[index][3] = arucos[i][0]
             elif j == 3: # ArUco Output - Begin of line
-              output_Logic[index][0] == arucos[i][0]
+              output_Logic[index][0] = arucos[i][0]
           # 1 OUTPUT    
           elif arucoType(arucos[i][1]) == 'SENSOR':
             if j == 3: # ArUco Output - Begin of line

@@ -59,6 +59,7 @@ GtkWidget *sensor_right_1;
 GtkWidget *button;
 bool vision_flag;
 int vision_error;
+bool sheet_available;
 
 int left_sensor;
 int right_sensor;

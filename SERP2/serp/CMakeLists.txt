@@ -167,8 +167,9 @@ add_definitions(${GTK_CFLAGS_OTHER})
 
 #add_executable(rpi_camera_node src/rpi_camera.cpp src/video_tests.cpp)
 add_executable(graphical_interface src/graphical_interface.cpp)
-add_executable(object_detection_node src/object_detection.cpp)
+#add_executable(object_detection_node src/object_detection.cpp)
 add_executable(logic_node src/logic_node.cpp)
+add_executable(sensor_node src/proximity_sensor.cpp)
 #add_executable(arduino_bridge_node src/arduino_bridge_node.cpp src/logica.cpp)
 
 
@@ -194,14 +195,20 @@ target_link_libraries(graphical_interface
   ${GTK_LIBRARIES}
 )
 
-target_link_libraries(object_detection_node
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  ${raspicam_CV_LIBS}
-)
+# target_link_libraries(object_detection_node
+#   ${catkin_LIBRARIES}
+#   ${OpenCV_LIBRARIES}
+#   ${raspicam_CV_LIBS}
+# )
 
 target_link_libraries(logic_node
   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(sensor_node
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${raspicam_CV_LIBS}
 )
 
 #target_link_libraries(arduino_bridge_node
@@ -211,8 +218,9 @@ target_link_libraries(logic_node
 #add_dependencies(rpi_camera_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(arduino_bridge_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(graphical_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(object_detection_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(object_detection_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(logic_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(sensor_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##

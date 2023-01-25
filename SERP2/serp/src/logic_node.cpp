@@ -199,9 +199,16 @@ void update_BlocksOutputs()
                 }
                 else if (blocks_list[i].name == "delay")
                 {
-                    if (blocks_list[i].timer == NULL)
+                    if (blocks_list[i].timer == 0)
                     {
-                        blocks_list[i].timer = clock() + (CLOCKS_PER_SEC * f2);
+                        blocks_list[i].timer = ros::Time::now().toSec() + f2;
+                    }
+                    else {
+                        if (ros::Time::now().toSec() >= blocks_list[i].timer)
+                        {
+                            blocks_list[i].time_done = true;
+                            blocks_list[i].out_f = f1;
+                        }
                     }
                 }
             }
@@ -489,10 +496,6 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
                     return -1;
                 }
             }
-            else if ((end_type == "timer") && (edges[i].input_id == 1)) 
-            {
-                return -1;
-            }
         }
 
         if (start_type == "choice")
@@ -532,10 +535,6 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
                         return -1;
                     }
                 }
-                else if ((end_type == "timer") && (edges[i].input_id == 1))
-                {
-                    return -1;
-                }
             }
         }
 
@@ -574,9 +573,12 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
 
         if ((start_type == "sensor") || (start_type == "constant"))
         {
-            if ((end_type == "timer") && (edges[i].input_id == 1))
+            if (end_type == "choice")
             {
-                return -1;
+                if ((end_name == "or") || (end_name == "and"))
+                {
+                    return -1;
+                }
             }
         }
      
@@ -598,6 +600,14 @@ int check_EdgesLogic() // criar func para verificar se todas as ligacoes fazem s
                 return -1;
             }
         }    
+
+        if (end_type == "constant")
+        {
+            if (start_type != "constant")
+            {
+                return -1;
+            }
+        }
     }
 
     return 0;
@@ -653,7 +663,7 @@ void construct_Blocks(std::vector <int> id, int N) // inicializa vetor com todos
         newBlock.out_f = NAN;
         newBlock.out_b = NAN;
         newBlock.constant = "";
-        newBlock.timer = NULL;
+        newBlock.timer = 0;
         newBlock.time_done = false;
 
         switch (id[i])
@@ -932,7 +942,8 @@ void cbMatrix(const serp::Matrix::ConstPtr &msg){
                 std_msgs::Int8 e;
                 e.data = error[i];
                 pub_errors.publish(e);
-                break;
+                matrix_rcv = false; 
+                return;
             }
         }
         if((error[0]==0) && (error[1]==0) && (error[2]==0) && (error[3]==0)){
@@ -975,19 +986,23 @@ int main(int argc, char **argv)
         //std::cout << "MATRIX" << std::endl;
         std::vector< int > last_tokens; // vector with last cycle tokens
         copy(tokens.begin(), tokens.end(), back_inserter(last_tokens));
-
         
         check_Token();
-        update_BlocksOutputs();
 
         if(!checkIfChanged(last_tokens)){
             tokens.clear();
             copy(init.begin(), init.end(), back_inserter(tokens));
         }
+        update_BlocksOutputs();
     }
     
-    if(out_vel[0] != real_vel[0] || out_vel[1] != real_vel[1]){
-        std::cout << "Change" << std::endl;
+    if((out_vel[0] != real_vel[0]) || (out_vel[1] != real_vel[1])){
+      //  std::cout << "Change" << std::endl;
+        if (out_vel[0] > 95) out_vel[0] = 95;
+        if (out_vel[0] < -95) out_vel[0] = -95;
+        if (out_vel[1] > 95) out_vel[1] = 95;
+        if (out_vel[1] < -95) out_vel[1] = -95;
+
         vel.vel_motor_left = out_vel[0];
         vel.vel_motor_right = out_vel[1];
         pub_vel.publish(vel);
@@ -996,6 +1011,7 @@ int main(int argc, char **argv)
     real_vel[1] = out_vel[1];
 
     ros::spinOnce();
+    ros::Duration(0.05).sleep();
   }
 
   return 0;

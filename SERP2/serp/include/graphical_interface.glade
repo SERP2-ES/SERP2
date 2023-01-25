@@ -168,7 +168,7 @@
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="button_ver_ultima_folha">
-                                        <property name="label" translatable="yes">Ver a última folha</property>
+                                        <property name="label" translatable="yes">Ver a última captura</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="receives-default">True</property>

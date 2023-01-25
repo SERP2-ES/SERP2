@@ -121,7 +121,7 @@ gboolean setImage(gpointer data) {
 
 
 
-gboolean showDialogLastDetectedSheet(gpointer data) {
+/*gboolean showDialogLastDetectedSheet(gpointer data) {
     GtkWidget *dialog, *content_area;
     GtkDialogFlags flags;
     // Create widgets
@@ -142,9 +142,11 @@ gboolean showDialogLastDetectedSheet(gpointer data) {
     gtk_container_add (GTK_CONTAINER(scrolled_window), dialog_image);
     gtk_widget_show_all(dialog);
     return false;
-}
+}*/
 
 gboolean showLastDetectedSheet(gpointer data) {
+
+    dialog_image = gtk_image_new_from_file("../../captured_image/image.jpg");
     GtkWidget *new_window;
     // Create window
     new_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -152,7 +154,7 @@ gboolean showLastDetectedSheet(gpointer data) {
     gtk_widget_add_events(GTK_WIDGET(new_window), GDK_CONFIGURE);
     gtk_window_set_resizable(GTK_WINDOW(new_window), true);
     g_signal_connect(new_window, "destroy", G_CALLBACK (gtk_widget_destroy), NULL);
-    g_signal_connect(G_OBJECT(new_window), "configure-event", G_CALLBACK(cb_gtk_resize_last_image), NULL);
+    //g_signal_connect(G_OBJECT(new_window), "configure-event", G_CALLBACK(cb_gtk_resize_last_image), NULL);
     GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_min_content_width(GTK_SCROLLED_WINDOW(scrolled_window), 800);
     gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window), 700);
@@ -283,7 +285,7 @@ void cb_gtk_window_size(GtkWindow *window, GdkEvent *event, gpointer data) {
     //gtk_widget_set_margin_start(widget_robot_state, (actual_window_width-IMAGE_WIDTH)/2 + (IMAGE_WIDTH-(130+robot_state_num_chars*7.3))/2);
 }
 
-void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data) {
+/*void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data) {
     int width, height;
     width = event->configure.width;
     height = event->configure.height;
@@ -297,9 +299,9 @@ void cb_gtk_resize_last_image(GtkWindow *window, GdkEvent *event, gpointer data)
     }
     last_detected_image_last_width = width;
     last_detected_image_last_height = height;
-}
+}*/
 
-void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer data) {
+/*void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer data) {
     int width, height;
     width = event->configure.width;
     height = event->configure.height;
@@ -313,7 +315,7 @@ void cb_gtk_resize_dialog_image(GtkWindow *window, GdkEvent *event, gpointer dat
     }
     last_detected_image_last_width = width;
     last_detected_image_last_height = height;
-}
+}*/
 
 gboolean error_function(gpointer data) {
     
@@ -335,7 +337,7 @@ gboolean error_function(gpointer data) {
         if(robot.error_logic != 1){
 
             if(robot.error_logic == 0){
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "SUCESSO: Folha de programação processada e compilada!", false);
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "SUCESSO: Folha de programação processada e compilada!", false);  
             }       
             else if(robot.error_logic == -1){
                 insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Combinações lógicas incorretas (p.ex Constante - condição IF)", true);
@@ -359,8 +361,13 @@ gboolean error_function(gpointer data) {
 void* usb_livefeed(gpointer data)
 {
     cv::VideoCapture cap("/dev/video1");
+    cv::VideoCapture cap2("/dev/video0");
     if(!cap.isOpened()) {
-        ROS_ERROR("Can't open usb camera!");
+        cap = cap2;
+        ROS_ERROR("Error opening camera 1");
+    }
+    if(!cap.isOpened()) {
+        ROS_ERROR("ERROR OPENING CAMERA");
     }
     //ros::Rate FPS(20);
     while(ros::ok())
@@ -376,39 +383,6 @@ void* usb_livefeed(gpointer data)
         pixbuf_rgb = gdk_pixbuf_new_from_data(aux_frame1.data, GDK_COLORSPACE_RGB,FALSE, 8,
                                                     aux_frame1.cols, aux_frame1.rows, aux_frame1.step, 0, NULL);
         g_idle_add ((GSourceFunc) setImage, pixbuf_rgb);
-        
-        //aux_frame1.release(); 
-        //FPS.sleep();
-
-        
-            //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar todos os ArUcos de Fronteira, enquadre melhor a folha!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -2:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Não foi possível detetar ArUcos na folha de programação!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -3:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais ArUcos com a orientação na folha errada!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     case -4:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: Existe um ou mais ArUcos com a orientação na folha errada!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    //         break;
-    //     default:
-    //     // code block
-    //         insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "ERRO LÓGICA: erro no COMPILAMENTO da folha de programação!", true);
-    //         robot.state = Stopped;
-    //         gtk_update_robot_state();
-    // }
     }
     cap.release();
     return NULL;
@@ -457,21 +431,21 @@ void errorLogicCallback(const std_msgs::Int8 &msg) // TO DO POR FAZER
 
 gboolean sensor_update(gpointer data) {
 
-    if(left_sensor==0){
+    if((left_sensor>=0) && (left_sensor<=30)){
         gtk_widget_set_visible (sensor_left_3, 1);
         gtk_widget_set_visible (sensor_left_2,0);
         gtk_widget_set_visible (sensor_left_1, 0);
         gtk_widget_set_visible (sensor_left_0,0);
 
     }
-    else if( (left_sensor>0) && (left_sensor<=30) ){
+    else if( (left_sensor>30) && (left_sensor<=60) ){
         gtk_widget_set_visible (sensor_left_3, 0);
         gtk_widget_set_visible (sensor_left_2,1);
         gtk_widget_set_visible (sensor_left_1, 0);
         gtk_widget_set_visible (sensor_left_0,0);
 
     }
-    else if((left_sensor>30) && (left_sensor<95)){
+    else if((left_sensor>60) && (left_sensor<=90)){
 
         gtk_widget_set_visible (sensor_left_3, 0);
         gtk_widget_set_visible (sensor_left_2,0);
@@ -486,21 +460,21 @@ gboolean sensor_update(gpointer data) {
     }
 
 
-    if(right_sensor==0){
+    if((right_sensor>=0) && (right_sensor<=30)){
         gtk_widget_set_visible (sensor_right_3, 1);
         gtk_widget_set_visible (sensor_right_2,0);
         gtk_widget_set_visible (sensor_right_1, 0);
         gtk_widget_set_visible (sensor_right_0,0);
 
     }
-    else if( (right_sensor>0) && (right_sensor<=30) ){
+    else if( (right_sensor>30) && (right_sensor<=60) ){
         gtk_widget_set_visible (sensor_right_3, 0);
         gtk_widget_set_visible (sensor_right_2,1);
         gtk_widget_set_visible (sensor_right_1, 0);
         gtk_widget_set_visible (sensor_right_0,0);
 
     }
-    else if((right_sensor>30) && (right_sensor<95)){
+    else if((right_sensor>60) && (right_sensor<=90)){
 
         gtk_widget_set_visible (sensor_right_3, 0);
         gtk_widget_set_visible (sensor_right_2,0);
@@ -515,21 +489,21 @@ gboolean sensor_update(gpointer data) {
     }
 
 
-    if(back_sensor==0){
+    if((back_sensor>=0) && (back_sensor<=30)){
         gtk_widget_set_visible (sensor_back_3, 1);
         gtk_widget_set_visible (sensor_back_2,0);
         gtk_widget_set_visible (sensor_back_1, 0);
         gtk_widget_set_visible (sensor_back_0,0);
 
     }
-    else if( (back_sensor>0) && (back_sensor<=30) ){
+    else if( (back_sensor>30) && (back_sensor<=60) ){
         gtk_widget_set_visible (sensor_back_3, 0);
         gtk_widget_set_visible (sensor_back_2,1);
         gtk_widget_set_visible (sensor_back_1, 0);
         gtk_widget_set_visible (sensor_back_0,0);
 
     }
-    else if((back_sensor>30) && (back_sensor<95)){
+    else if((back_sensor>60) && (back_sensor<=90)){
 
         gtk_widget_set_visible (sensor_back_3, 0);
         gtk_widget_set_visible (sensor_back_2,0);
@@ -544,21 +518,21 @@ gboolean sensor_update(gpointer data) {
     }
 
 
-    if(front_sensor==0){
+    if((front_sensor>=0) && (front_sensor<=30)){
         gtk_widget_set_visible (sensor_front_3, 1);
         gtk_widget_set_visible (sensor_front_2,0);
         gtk_widget_set_visible (sensor_front_1, 0);
         gtk_widget_set_visible (sensor_front_0,0);
 
     }
-    else if( (front_sensor>0) && (front_sensor<=30) ){
+    else if( (front_sensor>30) && (front_sensor<=60) ){
         gtk_widget_set_visible (sensor_front_3, 0);
         gtk_widget_set_visible (sensor_front_2,1);
         gtk_widget_set_visible (sensor_front_1, 0);
         gtk_widget_set_visible (sensor_front_0,0);
 
     }
-    else if((front_sensor>30) && (front_sensor<95)){
+    else if((front_sensor>60) && (front_sensor<=90)){
 
         gtk_widget_set_visible (sensor_front_3, 0);
         gtk_widget_set_visible (sensor_front_2,0);
@@ -593,6 +567,8 @@ int main(int argc, char *argv[])
     GtkLabel *label_motor_esquerda;
     GtkLabel *label_motor_direita;
     GtkCssProvider *css = gtk_css_provider_new();
+
+    sheet_available=FALSE;
 
     //button = gtk_button_new ();
 
@@ -868,29 +844,9 @@ extern "C"
 
     void on_button_read_sheet_clicked(GtkButton *button) {
         if(robot.state == Stopped) {
-            //std_srvs::Trigger srv;
-            //if(client_read_programming_sheet.call(srv) && srv.response.success) {
-                
-                //cv::VideoCapture cap("/dev/video1");
-                //cap.open(0);
-                //if(!cap.isOpened()) {
-                //    ROS_ERROR("Can't open usb camera!");
-//}
-                
-                //cap.read(frame);
-                //if (!frame.empty())
-                //{
-
-                    
+           
                     aux_frame2 = frame.clone();
-                    //cv::cvtColor(aux_frame2, aux_frame2, cv::COLOR_BGR2RGB);
-                    //GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data(aux_frame.data, GDK_COLORSPACE_RGB, FALSE, 8,
-                    //                                                    aux_frame.cols, aux_frame.rows, aux_frame.step, NULL, NULL);
-                    //dialog_image = gtk_image_new();
-                    //gtk_image_set_from_pixbuf(GTK_IMAGE(dialog_image), last_pixbuf_rgb);
-                    //g_object_unref(last_pixbuf_rgb);
-                    //g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
-
+                    
 
                     // Convert OpenCV image to ROS data
                     cv_bridge::CvImage img_bridge;
@@ -902,14 +858,14 @@ extern "C"
 
                     captured_frame.publish(img_msg);
 
+                    imwrite("../../captured_image/image.jpg",aux_frame2);
+                    sheet_available=TRUE;
+
                     robot.state = ReadingProgrammingSheet;
                     gtk_update_robot_state();
                 //}
                 //aux_frame2.release();
-            //}
-            //else {
-            //    insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Não foi possível ativar o modo de leitura da folha...", true);
-            //}
+            
         }
         else {
             insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Erro: Para ativar o modo de leitura da folha o robô tem que estar no modo \"Parado\"!...", true);
@@ -917,24 +873,21 @@ extern "C"
     }
     //esta função poderá desaparecer - por averiguar
     void on_button_see_last_detected_sheet_clicked(GtkButton *button) {
-        /*if(g_mutex_trylock(&mutex_camera_detections)) {
-            if(last_detected_sheet.empty()) {
-                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Ainda não foi detetada qualquer folha de programação...", true);
+        
+            if(!sheet_available) {
+                insert_text_to_log(log_mensagens, log_buffer, log_text_iter, "Ainda não foi tirada qualquer captura..", true);
             }
             else {
-                GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data((guint8*) last_detected_sheet.data, GDK_COLORSPACE_RGB, FALSE, 8,
+                /*GdkPixbuf *last_pixbuf_rgb = gdk_pixbuf_new_from_data((guint8*) last_detected_sheet.data, GDK_COLORSPACE_RGB, FALSE, 8,
                                                                       last_detected_sheet.cols, last_detected_sheet.rows, last_detected_sheet.step, NULL, NULL);
                 dialog_image = gtk_image_new();
                 gtk_image_set_from_pixbuf(GTK_IMAGE(dialog_image), last_pixbuf_rgb);
-                g_object_unref(last_pixbuf_rgb);
+                g_object_unref(last_pixbuf_rgb);*/
                 g_idle_add ((GSourceFunc) showLastDetectedSheet, NULL);
             }
-            g_mutex_unlock(&mutex_camera_detections);
-        }*/
-        gtk_widget_set_visible (sensor_back_3, 1);
-        gtk_widget_set_visible (sensor_back_2,0);
-        gtk_widget_set_visible (sensor_back_1, 0);
-        gtk_widget_set_visible (sensor_back_0,0);
+            
+        
+    
     }
 
     void on_button_global_stop_clicked(GtkButton *button) {
