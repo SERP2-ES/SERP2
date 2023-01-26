@@ -14,7 +14,7 @@ In the `Arduino` folder, the `.ino` file is used to control the motors. The file
 The `setup.py` is a python script that allows to connect the raspberry to a new wi-fi via a bluetooth socket (using [Serial Bluetooth Terminal App](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal&hl=pt_PT&gl=US)).
 
 The `serp` package was implemented by us and has the following structure:
-![ROS node graph](serp/extras/ROS_diagram.drawio.png)
+![ROS node graph](SERP2/serp/extras/ROS_diagram.drawio.png)
 
 ### Nodes
  - **GUI** - main node, controls the graphical interface (developed with gtk).
