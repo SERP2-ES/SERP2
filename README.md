@@ -1,6 +1,11 @@
 # SERP2
 
-This repository contains the implementations made for SERP robot in Engineering Systems course. 
+This repository contains the implementations made for SERP robot in Engineering Systems course. This project consists on the replication and improvement of the "Standalone Educational Robot with behaviour defined by Paper 1" (SERP1), developed in a previous iteration of this course. SERP is a robot that moves according to a set of instructions described on a paper sheet. Therefore, the robot is able to:
+
+ - View the sheet of paper;
+ - Identify the instructions present on it (described by ArUco markers);
+ - Transform these instructions into programmable logic;
+ - Execute the desired algorithm.
 
 Folder organization:
  - **SERP1** - Implementation made by the first team in the 2021/2022 course edition. [(Original repo)](https://github.com/jorgef1299/SERP).
@@ -23,4 +28,15 @@ The `serp` package was implemented by us and has the following structure:
  - **Logic** - traduces the graph into velocities for each motor.
  - **Object detection** -  Converts the image aquired from the fisheye camera into distances to objects in 4 directions (front, left, right and rear).
  - **Arduino** - Implements the motor controllers, so that the robot achieves the desired velocities.
+ 
+### Hardware
+ - Raspberry Pi (RPi) 4 Model B
+ - Arduino Uno
+ - Uninterrupted Power Supply (UPS)
+ - SD Card
+ - 200º Camera for RPi
+ - USB Camera (140º)
+ - DC Motors with Encoder
+ - Adafruit TB6612
+ - Heatsink for RPi
 
